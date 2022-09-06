@@ -11,6 +11,8 @@ Upstream | [wkhtmltopdf.org](http://wkhtmltopdf.org/)
 Wkhtmltox Version | [wkhtmltox-0.12.6-1](https://github.com/wkhtmltopdf/packaging/releases)
 -----
 
+### THIS IS A BETA CRATE, ONLY SOME ARGUMENTS HAVE BEEN VERIFIED, USE WITH CAUTION
+
 ## Features
 
 - Convert html code to PDF and IMG
