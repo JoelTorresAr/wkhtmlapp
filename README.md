@@ -17,6 +17,10 @@ Wkhtmltox Version | wkhtmltox-0.12.6-1
 - Convert html file to PDF and IMG
 - Convert url link to PDF and IMG
 
+## Version Control
+
+ - V.0.1.3 return full file path 
+
 
 ## Example
 
