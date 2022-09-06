@@ -21,6 +21,25 @@ Wkhtmltox Version | wkhtmltox-0.12.6-1
 ## PDF Examples
 
 ```sh
+fn main() {
+    let mut app = wkhtmlapp::PdfApp::new().unwrap();
+    let app_report = app.set_arg("enable-smart-shrinking", Some("true".to_string())).unwrap();
+    let html = r#"<html><body><div>foo</div></body></html>"#;
+    let report = app_report
+        .run(
+            wkhtmlapp::app::WkhtmlInput::Url(
+                "https://www.w3schools.com/graphics/svg_intro.asp".to_string(),
+            ),
+            "demo",
+        )
+        .unwrap();
+}
+```
+## IMG Examples
+
+## PDF Examples
+
+```sh
 let pdf_app = PdfApp::new().expect("Failed to init PDF Application");
 let html_code = r#"<html><body><div>DEMO</div></body></html>"#.to_string();
 let file_path = pdf_app.run(WkhtmlInput::Html(html_code),"demo").unwrap();
