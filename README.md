@@ -29,8 +29,21 @@ Wkhtmltox Version | [wkhtmltox-0.12.6-1](https://github.com/wkhtmltopdf/packagin
 ```sh
 fn main() {
     let mut app = wkhtmlapp::PdfApp::new().unwrap();
-    let app_report = app.set_arg("enable-smart-shrinking", Some("true".to_string())).unwrap();
-    let html = r#"<html><body><div>foo</div></body></html>"#;
+    let app_report = app
+        .set_arg("enable-smart-shrinking", Some("true".to_string()))
+        .unwrap()
+        .set_arg("title", Some("Torres".to_string()))
+        .unwrap()
+        .set_arg(
+            "header-right",
+            Some("Página [page] de [toPage]".to_string()),
+        )
+        .unwrap()
+        .set_arg(
+            "margin-top",
+            Some("18".to_string()),
+        )
+        .unwrap();
     let report = app_report
         .run(
             wkhtmlapp::app::WkhtmlInput::Url(
@@ -39,6 +52,7 @@ fn main() {
             "demo",
         )
         .unwrap();
+    println!("report: {:?}", report);
 }
 ```
 
