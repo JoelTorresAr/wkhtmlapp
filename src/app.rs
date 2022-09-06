@@ -41,7 +41,7 @@ impl App {
     pub fn new(wkhtmltox_cmd: String) -> Result<Self, WkhtmlError> {
         dotenv::dotenv().ok();
         Self::bin_checks(&wkhtmltox_cmd).map_err(WkhtmlError::ServiceErr)?;
-        let work_dir = env::var("WKHTMLTOPDF_WORK_DIR");
+        let work_dir = env::var("WKHTMLAPP_WORK_DIR");
         let work_dir = work_dir.unwrap_or_else(|_| Self::default_work_dir());
         fs::create_dir_all(&work_dir).map_err(|e| {
             WkhtmlError::ServiceErr(format!("Failed to create working directory, due to: {}", e))
