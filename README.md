@@ -5,7 +5,7 @@ wkhtmlapp makes use of wkhtmltopdf and wkhtmltoimage, command line tools to gene
 
 Resource  | Link
 ----- | -----
-Crate | [![Crates.io](https://img.shields.io/crates/v/wkhtmltopdf.svg?maxAge=2592000)](https://crates.io/crates/wkhtmltopdf)
+Crate | [![Crates.io](https://img.shields.io/crates/v/wkhtmltopdf.svg?maxAge=2592000)](https://crates.io/crates/wkhtmlapp)
 Documentation | [Cargo docs](https://github.com/JoelTorresAr/wkhtmlapp.git)
 Upstream | [wkhtmltopdf.org](http://wkhtmltopdf.org/)
 Wkhtmltox Version | wkhtmltox-0.12.6-1
