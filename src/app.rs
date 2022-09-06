@@ -1,5 +1,6 @@
 use self::uuid::Uuid;
 use log::{debug, error, info};
+use std::path::PathBuf;
 use std::process::{Command, Output, Stdio};
 use std::{env, fs, io::Write};
 use uuid;
@@ -16,16 +17,16 @@ pub enum WkhtmlInput {
 
 #[derive(Debug, Clone)]
 pub enum WkhtmlError {
-    Service(String),
-    Rendering(String),
+    ServiceErr(String),
+    RenderingErr(String),
 }
 
 // wkhtmlerror display
 impl std::fmt::Display for WkhtmlError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            WkhtmlError::Service(msg) => write!(f, "Service error: {}", msg),
-            WkhtmlError::Rendering(msg) => write!(f, "Rendering error: {}", msg),
+            WkhtmlError::ServiceErr(msg) => write!(f, "Service error: {}", msg),
+            WkhtmlError::RenderingErr(msg) => write!(f, "Rendering error: {}", msg),
         }
     }
 }
@@ -33,22 +34,41 @@ impl std::fmt::Display for WkhtmlError {
 #[derive(Debug, Clone)]
 pub struct App {
     pub wkhtmltox_cmd: String,
-    pub work_dir: String,
+    pub work_dir: PathBuf,
 }
 
 impl App {
     pub fn new(wkhtmltox_cmd: String) -> Result<Self, WkhtmlError> {
-        Self::bin_checks(&wkhtmltox_cmd).map_err(WkhtmlError::Service)?;
-        let work_dir =
-            env::var("WKHTMLTOPDF_WORK_DIR").unwrap_or_else(|_| "./storage/tmp".to_string());
+        dotenv::dotenv().ok();
+        Self::bin_checks(&wkhtmltox_cmd).map_err(WkhtmlError::ServiceErr)?;
+        let work_dir = env::var("WKHTMLTOPDF_WORK_DIR");
+        let work_dir = work_dir.unwrap_or_else(|_| Self::default_work_dir());
         fs::create_dir_all(&work_dir).map_err(|e| {
-            WkhtmlError::Service(format!("Failed to create working directory, due to: {}", e))
+            WkhtmlError::ServiceErr(format!("Failed to create working directory, due to: {}", e))
         })?;
+        let work_dir = Self::parse_dir(&work_dir)?;
 
         Ok(Self {
             wkhtmltox_cmd,
             work_dir,
         })
+    }
+
+    pub fn default_work_dir() -> String {
+        let root = env::temp_dir();
+        root.join("wkhtmlapp").to_str().unwrap().to_string()
+    }
+
+    pub fn parse_dir(dir: &str) -> Result<PathBuf, WkhtmlError> {
+        let path = PathBuf::from(dir);
+        if path.is_dir() {
+            Ok(path)
+        } else {
+            Err(WkhtmlError::ServiceErr(format!(
+                "Directory {} is not found",
+                dir
+            )))
+        }
     }
 
     pub fn bin_checks(wkhtmltox_cmd: &str) -> Result<(), String> {
@@ -89,14 +109,15 @@ impl App {
 
     pub fn set_work_dir(&mut self, work_dir: &str) -> Result<&mut Self, WkhtmlError> {
         fs::create_dir_all(work_dir).map_err(|e| {
-            WkhtmlError::Service(format!("Failed to create working directory, due to: {}", e))
+            WkhtmlError::ServiceErr(format!("Failed to create working directory, due to: {}", e))
         })?;
-        self.work_dir = work_dir.to_string();
+        self.work_dir = Self::parse_dir(&work_dir)?;
         Ok(self)
     }
 
     pub fn get_out_path(&self, name: &str) -> String {
-        format!("{}/{}-{}", self.work_dir, Uuid::new_v4(), name)
+        let temp_name = format!("{}-{}", Uuid::new_v4(), name);
+        self.work_dir.join(temp_name).to_str().unwrap().to_string()
     }
 
     pub fn run(
@@ -130,22 +151,22 @@ impl App {
             cmd.stderr(Stdio::piped());
         }
 
-        let child = cmd
-            .spawn()
-            .map_err(|e| WkhtmlError::Rendering(format!("Failed to spawn child process: {}", e)))?;
+        let child = cmd.spawn().map_err(|e| {
+            WkhtmlError::RenderingErr(format!("Failed to spawn child process: {}", e))
+        })?;
 
         debug!("Running command: {:?}", cmd);
 
-        let output = child
-            .wait_with_output()
-            .map_err(|e| WkhtmlError::Rendering(format!("Failed to spawn child process: {}", e)))?;
+        let output = child.wait_with_output().map_err(|e| {
+            WkhtmlError::RenderingErr(format!("Failed to spawn child process: {}", e))
+        })?;
 
         Self::depure(&output);
 
         if output.status.success() {
             Ok(out_path)
         } else {
-            Err(WkhtmlError::Rendering(format!(
+            Err(WkhtmlError::RenderingErr(format!(
                 "Failed to render, error: {}",
                 String::from_utf8_lossy(&output.stderr)
             )))
@@ -170,22 +191,22 @@ impl App {
             cmd.stderr(Stdio::piped());
         }
 
-        let child = cmd
-            .spawn()
-            .map_err(|e| WkhtmlError::Rendering(format!("Failed to spawn child process: {}", e)))?;
+        let child = cmd.spawn().map_err(|e| {
+            WkhtmlError::RenderingErr(format!("Failed to spawn child process: {}", e))
+        })?;
 
         debug!("Running command: {:?}", cmd);
 
-        let output = child
-            .wait_with_output()
-            .map_err(|e| WkhtmlError::Rendering(format!("Failed to spawn child process: {}", e)))?;
+        let output = child.wait_with_output().map_err(|e| {
+            WkhtmlError::RenderingErr(format!("Failed to spawn child process: {}", e))
+        })?;
 
         Self::depure(&output);
 
         if output.status.success() {
             Ok(out_path)
         } else {
-            Err(WkhtmlError::Rendering(format!(
+            Err(WkhtmlError::RenderingErr(format!(
                 "Failed to render, error: {}",
                 String::from_utf8_lossy(&output.stderr)
             )))
@@ -212,22 +233,21 @@ impl App {
 
         debug!("Running command: {:?}", cmd);
 
-        let mut child = cmd
-            .spawn()
-            .map_err(|e| WkhtmlError::Rendering(format!("Failed to spawn child process: {}", e)))?;
+        let mut child = cmd.spawn().map_err(|e| {
+            WkhtmlError::RenderingErr(format!("Failed to spawn child process: {}", e))
+        })?;
 
         let stdin = child
             .stdin
             .as_mut()
-            .ok_or_else(|| WkhtmlError::Rendering("Failed to open stdin".to_string()))?;
+            .ok_or_else(|| WkhtmlError::RenderingErr("Failed to open stdin".to_string()))?;
 
         stdin
             .write_all(html.as_bytes())
-            .map_err(|e| WkhtmlError::Rendering(format!("Failed to write to stdin: {}", e)))?;
-
+            .map_err(|e| WkhtmlError::RenderingErr(format!("Failed to write to stdin: {}", e)))?;
 
         let output = child.wait_with_output().map_err(|e| {
-            WkhtmlError::Rendering(format!("Failed to wait for child process: {}", e))
+            WkhtmlError::RenderingErr(format!("Failed to wait for child process: {}", e))
         })?;
 
         Self::depure(&output);
@@ -235,7 +255,7 @@ impl App {
         if output.status.success() {
             Ok(out_path)
         } else {
-            Err(WkhtmlError::Rendering(format!(
+            Err(WkhtmlError::RenderingErr(format!(
                 "Failed to render, error: {}",
                 String::from_utf8_lossy(&output.stderr)
             )))

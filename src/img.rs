@@ -100,7 +100,7 @@ impl ImgApp {
             self.options.insert(key.to_string(), arg);
             Ok(self)
         } else {
-            Err(WkhtmlError::Service(format!("Invalid option: {}", key)))
+            Err(WkhtmlError::ServiceErr(format!("Invalid option: {}", key)))
         }
     }
 
