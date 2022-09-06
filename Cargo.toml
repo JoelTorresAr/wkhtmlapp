@@ -1,0 +1,21 @@
+[package]
+authors = ["Torres Farro Denis Joel <djoel_torres@hotmail.com>"]
+description = "Bindings to wkhtmltopdf and wkhtmltoimage"
+documentation = "https://github.com/JoelTorresAr/wkhtmlapp.git"
+edition = "2021"
+keywords = ["wkhtmltopdf", "wkhtmltoimage", "pdf", "jpg", "png", "html","Clone","Send","Sync"]
+license = "MIT"
+name = "wkhtmlapp"
+readme = "README.md"
+repository = "https://github.com/JoelTorresAr/wkhtmlapp.git"
+version = "0.1.0"
+
+[dependencies]
+dotenv = "0.15.0"
+log = "0.4.14"
+serde_derive = "*"
+serde_json = "1.0.70"
+uuid = {version = "0.8.2", features = ["serde", "v4"]}
+
+[dev-dependencies]
+env_logger = "0.7"
