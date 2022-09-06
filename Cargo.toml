@@ -9,6 +9,7 @@ name = "wkhtmlapp"
 readme = "README.md"
 repository = "https://github.com/JoelTorresAr/wkhtmlapp.git"
 version = "0.1.3"
+exclude = ["/wkhtmloptions"]
 
 [dependencies]
 dotenv = "0.15.0"
