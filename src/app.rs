@@ -129,7 +129,6 @@ impl App {
         if !Self::get_debug() {
             cmd.stderr(Stdio::piped());
         }
-        println!("cmd: {:?}", cmd);
 
         let child = cmd
             .spawn()
@@ -176,7 +175,6 @@ impl App {
             .map_err(|e| WkhtmlError::Rendering(format!("Failed to spawn child process: {}", e)))?;
 
         debug!("Running command: {:?}", cmd);
-        println!("cmd: {:?}", cmd);
 
         let output = child
             .wait_with_output()
@@ -227,7 +225,6 @@ impl App {
             .write_all(html.as_bytes())
             .map_err(|e| WkhtmlError::Rendering(format!("Failed to write to stdin: {}", e)))?;
 
-        println!("cmd: {:?}", cmd);
 
         let output = child.wait_with_output().map_err(|e| {
             WkhtmlError::Rendering(format!("Failed to wait for child process: {}", e))
