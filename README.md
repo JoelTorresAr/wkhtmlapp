@@ -18,7 +18,7 @@ Wkhtmltox Version | wkhtmltox-0.12.6-1
 - Convert url link to PDF and IMG
 
 
-## PDF Examples
+## Example
 
 ```sh
 fn main() {
@@ -35,7 +35,6 @@ fn main() {
         .unwrap();
 }
 ```
-## IMG Examples
 
 ## PDF Examples
 
