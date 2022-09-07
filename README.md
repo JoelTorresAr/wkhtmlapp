@@ -23,7 +23,7 @@ wkhtmlapp makes use of wkhtmltopdf and wkhtmltoimage, command line tools to gene
 
 ### 0.1.4
 
- - Fix: Implement lifetime in arg params
+ - Lifetime was implemented, allowing to use str instead of String in sending arguments
 ### 0.1.3
 
  - Fix: Return full file path
