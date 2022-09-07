@@ -24,6 +24,9 @@ wkhtmlapp makes use of wkhtmltopdf and wkhtmltoimage, command line tools to gene
 ### 0.1.3
 
  - Fix: Return full file path
+### 0.1.4
+
+ - Fix: Implement lifetime in arg params
 
 
 ## Example
