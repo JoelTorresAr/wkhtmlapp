@@ -21,6 +21,9 @@ wkhtmlapp makes use of wkhtmltopdf and wkhtmltoimage, command line tools to gene
 
 ##  _Change Logs_
 
+### 0.1.5
+
+ - Arg value is no longer optional
 ### 0.1.4
 
  - Lifetime was implemented, allowing to use str instead of String in sending arguments
@@ -36,10 +39,10 @@ use wkhtmlapp::WkhtmlError;
 fn main() -> Result<(), WkhtmlError> {
     let mut app = wkhtmlapp::PdfApp::new()?;
     let app_report = app
-        .set_arg("enable-smart-shrinking", Some("true"))?
-        .set_arg("title", Some("Torres"))?
-        .set_arg("header-right", Some("Página [page] de [toPage]"))?
-        .set_arg("margin-top", Some("18"))?;
+        .set_arg("enable-smart-shrinking", "true")?
+        .set_arg("title", "Torres")?
+        .set_arg("header-right", "Página [page] de [toPage]")?
+        .set_arg("margin-top", "18")?;
 
     let report = app_report.run(
         wkhtmlapp::app::WkhtmlInput::Url("https://www.w3schools.com/graphics/svg_intro.asp"),
@@ -66,7 +69,7 @@ let file_path = pdf_app.run(
 
 ```sh
         let mut image_app = ImgApp::new().expect("Failed to init image Application");
-        let args = HashMap::from([("height", Some("20")), ("width", Some("20"))]);
+        let args = HashMap::from([("height", "20"), ("width", "20")]);
 
         let res = image_app
             .set_format(ImgFormat::Png)?
@@ -80,7 +83,7 @@ let file_path = pdf_app.run(
 let mut image_app = ImgApp::new().expect("Failed to init image Application");
 
         let mut pdf_app = PdfApp::new().expect("Failed to init PDF Application");
-        pdf_app.set_arg("margin-top", Some("0"))?;
+        pdf_app.set_arg("margin-top", "0")?;
 
         // Test building PDF from HTML
         let html_code = r#"<html><body><div>DEMO</div></body></html>"#;
