@@ -35,7 +35,7 @@ mod tests {
     fn test_img() {
         // Test building image from FILE
         let mut image_app = ImgApp::new().expect("Failed to init image Application");
-        let args = HashMap::from([("height", Some("20")), ("width", Some("20"))]);
+        let args = HashMap::from([("height", Some("100")), ("width", Some("100"))]);
 
         // Test building image from file
         let res = image_app
