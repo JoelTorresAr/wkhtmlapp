@@ -6,7 +6,7 @@ use std::env;
 #[derive(Debug, Clone)]
 pub struct PdfApp<'a> {
     pub app: App,
-    pub options: HashMap<&'a str, Option<&'a str>>,
+    pub options: HashMap<&'a str, &'a str>,
 }
 
 impl<'a> PdfApp<'a> {
@@ -22,28 +22,23 @@ impl<'a> PdfApp<'a> {
 
     fn build_args(&self) -> Vec<String> {
         let mut args = Vec::new();
-        for (key, value) in &self.options {
-            match value {
-                Some(v) => {
-                    if *v != "false" {
-                        if *v == "true" {
-                            if *key == "toc" || *key == "cover" {
-                                args.push(key.to_string());
-                            } else {
-                                args.push(format!("--{}", key));
-                            }
-                        } else {
-                            if *key == "toc" || *key == "cover" {
-                                args.push(key.to_string());
-                            } else {
-                                args.push(format!("--{}", key));
-                                args.push(format!("{}", v));
-                                //args.push(format!("--{} \"{}\"", key, v));
-                            }
-                        }
+        for (key, v) in &self.options {
+            if *v != "false" {
+                if *v == "true" {
+                    if *key == "toc" || *key == "cover" {
+                        args.push(key.to_string());
+                    } else {
+                        args.push(format!("--{}", key));
+                    }
+                } else {
+                    if *key == "toc" || *key == "cover" {
+                        args.push(key.to_string());
+                    } else {
+                        args.push(format!("--{}", key));
+                        args.push(format!("{}", v));
+                        //args.push(format!("--{} \"{}\"", key, v));
                     }
                 }
-                _ => {}
             }
         }
         args
@@ -54,18 +49,15 @@ impl<'a> PdfApp<'a> {
         Ok(self)
     }
 
-    pub fn set_args(
-        &mut self,
-        args: HashMap<&'a str, Option<&'a str>>,
-    ) -> Result<&mut Self, WkhtmlError> {
+    pub fn set_args(&mut self, args: HashMap<&'a str, &'a str>) -> Result<&mut Self, WkhtmlError> {
         for (key, value) in args {
             self.set_arg(key, value)?;
         }
         Ok(self)
     }
 
-    pub fn set_arg(&mut self, key: &'a str, arg: Option<&'a str>) -> Result<&mut Self, WkhtmlError> {
-        if self.options.contains_key(key) {
+    pub fn set_arg(&mut self, key: &'a str, arg: &'a str) -> Result<&mut Self, WkhtmlError> {
+        if Self::validate_option(key) {
             self.options.insert(key, arg);
             Ok(self)
         } else {
@@ -82,147 +74,152 @@ impl<'a> PdfApp<'a> {
         }
     }
 
-    fn default_options() -> HashMap<&'static str, Option<&'a str>> {
-        HashMap::from([
+    fn default_options() -> HashMap<&'static str, &'a str> {
+        HashMap::from([])
+    }
+
+    fn validate_option(key: &str) -> bool {
+        let options: Vec<&'static str> = vec![
             // Global options
-            ("collate", None),
-            ("no-collate", None),
-            ("cookie-jar", None),
-            ("copies", None),
-            ("dpi", None),
-            ("extended-help", None),
-            ("grayscale", None),
-            ("help", None),
-            ("htmldoc", None),
-            ("ignore-load-errors", None), // old v0.9
-            ("image-dpi", None),
-            ("image-quality", None),
-            ("license", None),
-            ("log-level", None),
-            ("lowquality", None),
-            ("manpage", None),
-            ("margin-bottom", None),
-            ("margin-left", None),
-            ("margin-right", None),
-            ("margin-top", None),
-            ("orientation", None),
-            ("page-height", None),
-            ("page-size", None),
-            ("page-width", None),
-            ("no-pdf-compression", None),
-            ("quiet", None),
-            ("read-args-from-stdin", None),
-            ("readme", None),
-            ("title", None),
-            ("use-xserver", None),
-            ("version", None),
+            "collate",
+            "no-collate",
+            "cookie-jar",
+            "copies",
+            "dpi",
+            "extended-help",
+            "grayscale",
+            "help",
+            "htmldoc",
+            "ignore-load-errors", // old v0.9
+            "image-dpi",
+            "image-quality",
+            "license",
+            "log-level",
+            "lowquality",
+            "manpage",
+            "margin-bottom",
+            "margin-left",
+            "margin-right",
+            "margin-top",
+            "orientation",
+            "page-height",
+            "page-size",
+            "page-width",
+            "no-pdf-compression",
+            "quiet",
+            "read-args-from-stdin",
+            "readme",
+            "title",
+            "use-xserver",
+            "version",
             // Outline options
-            ("dump-default-toc-xsl", None),
-            ("dump-outline", None),
-            ("outline", None),
-            ("no-outline", None),
-            ("outline-depth", None),
-            ("output-format", None),
+            "dump-default-toc-xsl",
+            "dump-outline",
+            "outline",
+            "no-outline",
+            "outline-depth",
+            "output-format",
             // Page options
-            ("allow", None),
-            ("background", None),
-            ("no-background", None),
-            ("bypass-proxy-for", None),
-            ("cache-dir", None),
-            ("checkbox-checked-svg", None),
-            ("checkbox-svg", None),
-            ("cookie", None),
-            ("custom-header", None),
-            ("custom-header-propagation", None),
-            ("no-custom-header-propagation", None),
-            ("debug-javascript", None),
-            ("no-debug-javascript", None),
-            ("default-header", None),
-            ("encoding", None),
-            ("disable-external-links", None),
-            ("enable-external-links", None),
-            ("disable-forms", None),
-            ("enable-forms", None),
-            ("images", None),
-            ("no-images", None),
-            ("disable-internal-links", None),
-            ("enable-internal-links", None),
-            ("disable-javascript", None),
-            ("enable-javascript", None),
-            ("javascript-delay", None),
-            ("keep-relative-links", None),
-            ("load-error-handling", None),
-            ("load-media-error-handling", None),
-            ("disable-local-file-access", None),
-            ("enable-local-file-access", None),
-            ("minimum-font-size", None),
-            ("exclude-from-outline", None),
-            ("include-in-outline", None),
-            ("page-offset", None),
-            ("password", None),
-            ("disable-plugins", None),
-            ("enable-plugins", None),
-            ("post", None),
-            ("post-file", None),
-            ("print-media-type", None),
-            ("no-print-media-type", None),
-            ("proxy", None),
-            ("proxy-hostname-lookup", None),
-            ("radiobutton-checked-svg", None),
-            ("radiobutton-svg", None),
-            ("redirect-delay", None), // old v0.9
-            ("resolve-relative-links", None),
-            ("run-script", None),
-            ("disable-smart-shrinking", None),
-            ("enable-smart-shrinking", None),
-            ("ssl-crt-path", None),
-            ("ssl-key-password", None),
-            ("ssl-key-path", None),
-            ("stop-slow-scripts", None),
-            ("no-stop-slow-scripts", None),
-            ("disable-toc-back-links", None),
-            ("enable-toc-back-links", None),
-            ("user-style-sheet", None),
-            ("username", None),
-            ("viewport-size", None),
-            ("window-status", None),
-            ("zoom", None),
+            "allow",
+            "background",
+            "no-background",
+            "bypass-proxy-for",
+            "cache-dir",
+            "checkbox-checked-svg",
+            "checkbox-svg",
+            "cookie",
+            "custom-header",
+            "custom-header-propagation",
+            "no-custom-header-propagation",
+            "debug-javascript",
+            "no-debug-javascript",
+            "default-header",
+            "encoding",
+            "disable-external-links",
+            "enable-external-links",
+            "disable-forms",
+            "enable-forms",
+            "images",
+            "no-images",
+            "disable-internal-links",
+            "enable-internal-links",
+            "disable-javascript",
+            "enable-javascript",
+            "javascript-delay",
+            "keep-relative-links",
+            "load-error-handling",
+            "load-media-error-handling",
+            "disable-local-file-access",
+            "enable-local-file-access",
+            "minimum-font-size",
+            "exclude-from-outline",
+            "include-in-outline",
+            "page-offset",
+            "password",
+            "disable-plugins",
+            "enable-plugins",
+            "post",
+            "post-file",
+            "print-media-type",
+            "no-print-media-type",
+            "proxy",
+            "proxy-hostname-lookup",
+            "radiobutton-checked-svg",
+            "radiobutton-svg",
+            "redirect-delay", // old v0.9
+            "resolve-relative-links",
+            "run-script",
+            "disable-smart-shrinking",
+            "enable-smart-shrinking",
+            "ssl-crt-path",
+            "ssl-key-password",
+            "ssl-key-path",
+            "stop-slow-scripts",
+            "no-stop-slow-scripts",
+            "disable-toc-back-links",
+            "enable-toc-back-links",
+            "user-style-sheet",
+            "username",
+            "viewport-size",
+            "window-status",
+            "zoom",
             // Headers and footer options
-            ("footer-center", None),
-            ("footer-font-name", None),
-            ("footer-font-size", None),
-            ("footer-html", None),
-            ("footer-left", None),
-            ("footer-line", None),
-            ("no-footer-line", None),
-            ("footer-right", None),
-            ("footer-spacing", None),
-            ("header-center", None),
-            ("header-font-name", None),
-            ("header-font-size", None),
-            ("header-html", None),
-            ("header-left", None),
-            ("header-line", None),
-            ("no-header-line", None),
-            ("header-right", None),
-            ("header-spacing", None),
-            ("replace", None),
+            "footer-center",
+            "footer-font-name",
+            "footer-font-size",
+            "footer-html",
+            "footer-left",
+            "footer-line",
+            "no-footer-line",
+            "footer-right",
+            "footer-spacing",
+            "header-center",
+            "header-font-name",
+            "header-font-size",
+            "header-html",
+            "header-left",
+            "header-line",
+            "no-header-line",
+            "header-right",
+            "header-spacing",
+            "replace",
             // Cover object
-            ("cover", None),
+            "cover",
             // TOC object
-            ("toc", None),
+            "toc",
             // TOC options
-            ("disable-dotted-lines", None),
-            ("toc-depth", None),        // old v0.9
-            ("toc-font-name", None),    // old v0.9
-            ("toc-l1-font-size", None), // old v0.9
-            ("toc-header-text", None),
-            ("toc-header-font-name", None), // old v0.9
-            ("toc-header-font-size", None), // old v0.9
-            ("toc-level-indentation", None),
-            ("disable-toc-links", None),
-            ("toc-text-size-shrink", None),
-            ("xsl-style-sheet", None),
-        ])
+            "disable-dotted-lines",
+            "toc-depth",        // old v0.9
+            "toc-font-name",    // old v0.9
+            "toc-l1-font-size", // old v0.9
+            "toc-header-text",
+            "toc-header-font-name", // old v0.9
+            "toc-header-font-size", // old v0.9
+            "toc-level-indentation",
+            "disable-toc-links",
+            "toc-text-size-shrink",
+            "xsl-style-sheet",
+        ];
+        options.contains(&key)
     }
 }

@@ -26,7 +26,7 @@ impl std::fmt::Display for ImgFormat {
 #[derive(Debug, Clone)]
 pub struct ImgApp<'a> {
     pub app: App,
-    pub options: HashMap<&'a str, Option<&'a str>>,
+    pub options: HashMap<&'a str, &'a str>,
     pub format: ImgFormat,
 }
 
@@ -48,33 +48,28 @@ impl<'a> ImgApp<'a> {
             ImgFormat::Bmp => "bmp",
             ImgFormat::Svg => "svg",
         };
-        self.set_arg("format", Some(format))?;
+        self.set_arg("format", format)?;
         Ok(self)
     }
 
     fn build_args(&self) -> Vec<String> {
         let mut args = Vec::new();
-        for (key, value) in &self.options {
-            match value {
-                Some(v) => {
-                    if *v != "false" {
-                        if *v == "true" {
-                            if *key == "toc" || *key == "cover" {
-                                args.push(key.to_string());
-                            } else {
-                                args.push(format!("--{}", key));
-                            }
-                        } else {
-                            if *key == "toc" || *key == "cover" {
-                                args.push(key.to_string());
-                            } else {
-                                args.push(format!("--{}", key));
-                                args.push(format!("{}", v));
-                            }
-                        }
+        for (key, v) in &self.options {
+            if *v != "false" {
+                if *v == "true" {
+                    if *key == "toc" || *key == "cover" {
+                        args.push(key.to_string());
+                    } else {
+                        args.push(format!("--{}", key));
+                    }
+                } else {
+                    if *key == "toc" || *key == "cover" {
+                        args.push(key.to_string());
+                    } else {
+                        args.push(format!("--{}", key));
+                        args.push(format!("{}", v));
                     }
                 }
-                _ => {}
             }
         }
         args
@@ -85,18 +80,15 @@ impl<'a> ImgApp<'a> {
         Ok(self)
     }
 
-    pub fn set_args(
-        &mut self,
-        args: HashMap<&'a str, Option<&'a str>>,
-    ) -> Result<&mut Self, WkhtmlError> {
+    pub fn set_args(&mut self, args: HashMap<&'a str, &'a str>) -> Result<&mut Self, WkhtmlError> {
         for (key, value) in args {
             self.set_arg(&key, value)?;
         }
         Ok(self)
     }
 
-    pub fn set_arg(&mut self, key: &'a str, arg: Option<&'a str>) -> Result<&mut Self, WkhtmlError> {
-        if self.options.contains_key(key) {
+    pub fn set_arg(&mut self, key: &'a str, arg: &'a str) -> Result<&mut Self, WkhtmlError> {
+        if Self::validate_option(key) {
             self.options.insert(key, arg);
             Ok(self)
         } else {
@@ -117,59 +109,64 @@ impl<'a> ImgApp<'a> {
         "jpg"
     }
 
-    fn default_options() -> HashMap<&'a str, Option<&'a str>> {
-        HashMap::from([
-            ("allow", None), // Allow the file or files from the specified folder to be loaded (repeatable)
-            ("bypass-proxy-for", None), // Bypass proxy for host (repeatable)
-            ("cache-dir", None), // Web cache directory
-            ("checkbox-checked-svg", None), // Use this SVG file when rendering checked checkboxes
-            ("checked-svg", None), // Use this SVG file when rendering unchecked checkboxes
-            ("cookie", None), // Set an additional cookie (repeatable)
-            ("cookie-jar", None), // Read and write cookies from and to the supplied cookie jar file
-            ("crop-h", None), // Set height for cropping
-            ("crop-w", None), // Set width for cropping
-            ("crop-x", None), // Set x coordinate for cropping (default 0)
-            ("crop-y", None), // Set y coordinate for cropping (default 0)
-            ("custom-header", None), // Set an additional HTTP header (repeatable)
-            ("custom-header-propagation", None), // Add HTTP headers specified by --custom-header for each resource request.
-            ("no-custom-header-propagation", None), // Do not add HTTP headers specified by --custom-header for each resource request.
-            ("debug-javascript", None),             // Show javascript debugging output
-            ("no-debug-javascript", None), // Do not show javascript debugging output (default)
-            ("encoding", None),            // Set the default text encoding, for input
-            ("format", Some(ImgApp::default_extension())), // Output format
-            ("height", None), // Set screen height (default is calculated from page content) (default 0)
-            ("images", None), // Do load or print images (default)
-            ("no-images", None), // Do not load or print images
-            ("disable-javascript", None), // Do not allow web pages to run javascript
-            ("enable-javascript", None), // Do allow web pages to run javascript (default)
-            ("javascript-delay", None), // Wait some milliseconds for javascript finish (default 200)
-            ("load-error-handling", None), // Specify how to handle pages that fail to load: abort, ignore or skip (default abort)
-            ("load-media-error-handling", None), // Specify how to handle media files that fail to load: abort, ignore or skip (default ignore)
-            ("disable-local-file-access", None), // Do not allowed conversion of a local file to read in other local files, unless explicitly allowed with allow
-            ("enable-local-file-access", None), // Allowed conversion of a local file to read in other local files. (default)
-            ("minimum-font-size", None),        // Minimum font size
-            ("password", None),                 // HTTP Authentication password
-            ("disable-plugins", None),          // Disable installed plugins (default)
-            ("enable-plugins", None), // Enable installed plugins (plugins will likely not work)
-            ("post", None),           // Add an additional post field
-            ("post-file", None),      // Post an additional file
-            ("proxy", None),          // Use a proxy
-            ("quality", None),        // Output image quality (between 0 and 100) (default 94)
-            ("quiet", None),          // Be less verbose
-            ("radiobutton-checked-svg", None), // Use this SVG file when rendering checked radio-buttons
-            ("radiobutton-svg", None), // Use this SVG file when rendering unchecked radio-buttons
-            ("run-script", None), // Run this additional javascript after the page is done loading (repeatable)
-            ("disable-smart-width", None), // Use the specified width even if it is not large enough for the content
-            ("enable-smart-width", None),  // Extend --width to fit unbreakable content (default)
-            ("stop-slow-scripts", None),   // Stop slow running javascript
-            ("no-stop-slow-scripts", None), // Do not stop slow running javascript (default)
-            ("transparent", None),         // Make the background transparent in pngs *
-            ("use-xserver", None), // Use the X server (some plugins and other stuff might not work without X11)
-            ("user-style-sheet", None), // Specify a user style sheet, to load with every page
-            ("username", None),    // HTTP Authentication username
-            ("width", None),       // Set screen width (default is 1024)
-            ("window-status", None), // Wait until window.status is equal to this string before rendering page
-            ("zoom", None),          // Use this zoom factor (default 1)
-        ])
+    fn default_options() -> HashMap<&'a str, &'a str> {
+        HashMap::from([])
+    }
+
+    fn validate_option(key: &str) -> bool {
+        let options: Vec<&'static str> = vec![
+            "allow", // Allow the file or files from the specified folder to be loaded (repeatable)
+            "bypass-proxy-for", // Bypass proxy for host (repeatable)
+            "cache-dir", // Web cache directory
+            "checkbox-checked-svg", // Use this SVG file when rendering checked checkboxes
+            "checked-svg", // Use this SVG file when rendering unchecked checkboxes
+            "cookie", // Set an additional cookie (repeatable)
+            "cookie-jar", // Read and write cookies from and to the supplied cookie jar file
+            "crop-h", // Set height for cropping
+            "crop-w", // Set width for cropping
+            "crop-x", // Set x coordinate for cropping (default 0)
+            "crop-y", // Set y coordinate for cropping (default 0)
+            "custom-header", // Set an additional HTTP header (repeatable)
+            "custom-header-propagation", // Add HTTP headers specified by --custom-header for each resource request.
+            "no-custom-header-propagation", // Do not add HTTP headers specified by --custom-header for each resource request.
+            "debug-javascript",             // Show javascript debugging output
+            "no-debug-javascript",          // Do not show javascript debugging output (default)
+            "encoding",                     // Set the default text encoding, for input
+            "format",                       // Output format
+            "height", // Set screen height (default is calculated from page content) (default 0)
+            "images", // Do load or print images (default)
+            "no-images", // Do not load or print images
+            "disable-javascript", // Do not allow web pages to run javascript
+            "enable-javascript", // Do allow web pages to run javascript (default)
+            "javascript-delay", // Wait some milliseconds for javascript finish (default 200)
+            "load-error-handling", // Specify how to handle pages that fail to load: abort, ignore or skip (default abort)
+            "load-media-error-handling", // Specify how to handle media files that fail to load: abort, ignore or skip (default ignore)
+            "disable-local-file-access", // Do not allowed conversion of a local file to read in other local files, unless explicitly allowed with allow
+            "enable-local-file-access", // Allowed conversion of a local file to read in other local files. (default)
+            "minimum-font-size",        // Minimum font size
+            "password",                 // HTTP Authentication password
+            "disable-plugins",          // Disable installed plugins (default)
+            "enable-plugins",           // Enable installed plugins (plugins will likely not work)
+            "post",                     // Add an additional post field
+            "post-file",                // Post an additional file
+            "proxy",                    // Use a proxy
+            "quality",                  // Output image quality (between 0 and 100) (default 94)
+            "quiet",                    // Be less verbose
+            "radiobutton-checked-svg",  // Use this SVG file when rendering checked radio-buttons
+            "radiobutton-svg",          // Use this SVG file when rendering unchecked radio-buttons
+            "run-script", // Run this additional javascript after the page is done loading (repeatable)
+            "disable-smart-width", // Use the specified width even if it is not large enough for the content
+            "enable-smart-width",  // Extend --width to fit unbreakable content (default)
+            "stop-slow-scripts",   // Stop slow running javascript
+            "no-stop-slow-scripts", // Do not stop slow running javascript (default)
+            "transparent",         // Make the background transparent in pngs *
+            "use-xserver", // Use the X server (some plugins and other stuff might not work without X11)
+            "user-style-sheet", // Specify a user style sheet, to load with every page
+            "username",    // HTTP Authentication username
+            "width",       // Set screen width (default is 1024)
+            "window-status", // Wait until window.status is equal to this string before rendering page
+            "zoom",          // Use this zoom factor (default 1)
+        ];
+        options.contains(&key)
     }
 }

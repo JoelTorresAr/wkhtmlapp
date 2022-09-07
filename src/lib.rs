@@ -14,7 +14,7 @@ mod tests {
     fn test_pdf() {
         let _ = env_logger::init();
         let mut pdf_app = PdfApp::new().expect("Failed to init PDF Application");
-        let args = HashMap::from([("enable-smart-shrinking", Some("true"))]);
+        let args = HashMap::from([("enable-smart-shrinking", "true")]);
         pdf_app.set_args(args).unwrap();
 
         // Test building PDF from HTML
@@ -27,7 +27,7 @@ mod tests {
         assert!(res.is_ok(), "{}", res.unwrap_err());
 
         // Test building PDF from URL
-        let res = pdf_app.run(WkhtmlInput::Url("https://www.rust-lang.org/en-US/"), "demo");
+        let res = pdf_app.run(WkhtmlInput::Url("https://wkhtmltopdf.org/"), "demo");
         assert!(res.is_ok(), "{}", res.unwrap_err());
     }
 
@@ -35,7 +35,7 @@ mod tests {
     fn test_img() {
         // Test building image from FILE
         let mut image_app = ImgApp::new().expect("Failed to init image Application");
-        let args = HashMap::from([("height", Some("100")), ("width", Some("100"))]);
+        let args = HashMap::from([("height", "100"), ("width", "100")]);
 
         // Test building image from file
         let res = image_app
@@ -47,7 +47,7 @@ mod tests {
         assert!(res.is_ok(), "{}", res.unwrap_err());
 
         // Test building image from URL
-        let res = image_app.run(WkhtmlInput::Url("https://www.rust-lang.org/en-US/"), "demo");
+        let res = image_app.run(WkhtmlInput::Url("https://wkhtmltopdf.org/"), "demo");
         assert!(res.is_ok(), "{}", res.unwrap_err());
     }
 }
