@@ -24,13 +24,13 @@ impl std::fmt::Display for ImgFormat {
 }
 
 #[derive(Debug, Clone)]
-pub struct ImgApp {
+pub struct ImgApp<'a> {
     pub app: App,
-    pub options: HashMap<String, Option<String>>,
+    pub options: HashMap<&'a str, Option<&'a str>>,
     pub format: ImgFormat,
 }
 
-impl ImgApp {
+impl<'a> ImgApp<'a> {
     pub fn new() -> Result<Self, WkhtmlError> {
         let wkhtmltoimg_cmd =
             env::var("WKHTMLTOIMG_CMD").unwrap_or_else(|_| "wkhtmltoimage".to_string());
@@ -48,7 +48,7 @@ impl ImgApp {
             ImgFormat::Bmp => "bmp",
             ImgFormat::Svg => "svg",
         };
-        self.set_arg("format", Some(format.to_string()))?;
+        self.set_arg("format", Some(format))?;
         Ok(self)
     }
 
@@ -57,15 +57,15 @@ impl ImgApp {
         for (key, value) in &self.options {
             match value {
                 Some(v) => {
-                    if v != "false" {
-                        if v == "true" {
-                            if key == "toc" || key == "cover" {
+                    if *v != "false" {
+                        if *v == "true" {
+                            if *key == "toc" || *key == "cover" {
                                 args.push(key.to_string());
                             } else {
                                 args.push(format!("--{}", key));
                             }
                         } else {
-                            if key == "toc" || key == "cover" {
+                            if *key == "toc" || *key == "cover" {
                                 args.push(key.to_string());
                             } else {
                                 args.push(format!("--{}", key));
@@ -87,7 +87,7 @@ impl ImgApp {
 
     pub fn set_args(
         &mut self,
-        args: HashMap<String, Option<String>>,
+        args: HashMap<&'a str, Option<&'a str>>,
     ) -> Result<&mut Self, WkhtmlError> {
         for (key, value) in args {
             self.set_arg(&key, value)?;
@@ -95,9 +95,9 @@ impl ImgApp {
         Ok(self)
     }
 
-    pub fn set_arg(&mut self, key: &str, arg: Option<String>) -> Result<&mut Self, WkhtmlError> {
+    pub fn set_arg(&mut self, key: &'a str, arg: Option<&'a str>) -> Result<&mut Self, WkhtmlError> {
         if self.options.contains_key(key) {
-            self.options.insert(key.to_string(), arg);
+            self.options.insert(key, arg);
             Ok(self)
         } else {
             Err(WkhtmlError::ServiceErr(format!("Invalid option: {}", key)))
@@ -113,63 +113,63 @@ impl ImgApp {
         }
     }
 
-    pub fn default_extension() -> String {
-        "jpg".to_string()
+    pub fn default_extension() -> &'a str {
+        "jpg"
     }
 
-    fn default_options() -> HashMap<String, Option<String>> {
+    fn default_options() -> HashMap<&'a str, Option<&'a str>> {
         HashMap::from([
-            ("allow".to_string(), None), // Allow the file or files from the specified folder to be loaded (repeatable)
-            ("bypass-proxy-for".to_string(), None), // Bypass proxy for host (repeatable)
-            ("cache-dir".to_string(), None), // Web cache directory
-            ("checkbox-checked-svg".to_string(), None), // Use this SVG file when rendering checked checkboxes
-            ("checked-svg".to_string(), None), // Use this SVG file when rendering unchecked checkboxes
-            ("cookie".to_string(), None),      // Set an additional cookie (repeatable)
-            ("cookie-jar".to_string(), None), // Read and write cookies from and to the supplied cookie jar file
-            ("crop-h".to_string(), None),     // Set height for cropping
-            ("crop-w".to_string(), None),     // Set width for cropping
-            ("crop-x".to_string(), None),     // Set x coordinate for cropping (default 0)
-            ("crop-y".to_string(), None),     // Set y coordinate for cropping (default 0)
-            ("custom-header".to_string(), None), // Set an additional HTTP header (repeatable)
-            ("custom-header-propagation".to_string(), None), // Add HTTP headers specified by --custom-header for each resource request.
-            ("no-custom-header-propagation".to_string(), None), // Do not add HTTP headers specified by --custom-header for each resource request.
-            ("debug-javascript".to_string(), None),             // Show javascript debugging output
-            ("no-debug-javascript".to_string(), None), // Do not show javascript debugging output (default)
-            ("encoding".to_string(), None),            // Set the default text encoding, for input
-            ("format".to_string(), Some(ImgApp::default_extension())), // Output format
-            ("height".to_string(), None), // Set screen height (default is calculated from page content) (default 0)
-            ("images".to_string(), None), // Do load or print images (default)
-            ("no-images".to_string(), None), // Do not load or print images
-            ("disable-javascript".to_string(), None), // Do not allow web pages to run javascript
-            ("enable-javascript".to_string(), None), // Do allow web pages to run javascript (default)
-            ("javascript-delay".to_string(), None), // Wait some milliseconds for javascript finish (default 200)
-            ("load-error-handling".to_string(), None), // Specify how to handle pages that fail to load: abort, ignore or skip (default abort)
-            ("load-media-error-handling".to_string(), None), // Specify how to handle media files that fail to load: abort, ignore or skip (default ignore)
-            ("disable-local-file-access".to_string(), None), // Do not allowed conversion of a local file to read in other local files, unless explicitly allowed with allow
-            ("enable-local-file-access".to_string(), None), // Allowed conversion of a local file to read in other local files. (default)
-            ("minimum-font-size".to_string(), None),        // Minimum font size
-            ("password".to_string(), None),                 // HTTP Authentication password
-            ("disable-plugins".to_string(), None),          // Disable installed plugins (default)
-            ("enable-plugins".to_string(), None), // Enable installed plugins (plugins will likely not work)
-            ("post".to_string(), None),           // Add an additional post field
-            ("post-file".to_string(), None),      // Post an additional file
-            ("proxy".to_string(), None),          // Use a proxy
-            ("quality".to_string(), None), // Output image quality (between 0 and 100) (default 94)
-            ("quiet".to_string(), None),   // Be less verbose
-            ("radiobutton-checked-svg".to_string(), None), // Use this SVG file when rendering checked radio-buttons
-            ("radiobutton-svg".to_string(), None), // Use this SVG file when rendering unchecked radio-buttons
-            ("run-script".to_string(), None), // Run this additional javascript after the page is done loading (repeatable)
-            ("disable-smart-width".to_string(), None), // Use the specified width even if it is not large enough for the content
-            ("enable-smart-width".to_string(), None), // Extend --width to fit unbreakable content (default)
-            ("stop-slow-scripts".to_string(), None),  // Stop slow running javascript
-            ("no-stop-slow-scripts".to_string(), None), // Do not stop slow running javascript (default)
-            ("transparent".to_string(), None),          // Make the background transparent in pngs *
-            ("use-xserver".to_string(), None), // Use the X server (some plugins and other stuff might not work without X11)
-            ("user-style-sheet".to_string(), None), // Specify a user style sheet, to load with every page
-            ("username".to_string(), None),         // HTTP Authentication username
-            ("width".to_string(), None),            // Set screen width (default is 1024)
-            ("window-status".to_string(), None), // Wait until window.status is equal to this string before rendering page
-            ("zoom".to_string(), None),          // Use this zoom factor (default 1)
+            ("allow", None), // Allow the file or files from the specified folder to be loaded (repeatable)
+            ("bypass-proxy-for", None), // Bypass proxy for host (repeatable)
+            ("cache-dir", None), // Web cache directory
+            ("checkbox-checked-svg", None), // Use this SVG file when rendering checked checkboxes
+            ("checked-svg", None), // Use this SVG file when rendering unchecked checkboxes
+            ("cookie", None), // Set an additional cookie (repeatable)
+            ("cookie-jar", None), // Read and write cookies from and to the supplied cookie jar file
+            ("crop-h", None), // Set height for cropping
+            ("crop-w", None), // Set width for cropping
+            ("crop-x", None), // Set x coordinate for cropping (default 0)
+            ("crop-y", None), // Set y coordinate for cropping (default 0)
+            ("custom-header", None), // Set an additional HTTP header (repeatable)
+            ("custom-header-propagation", None), // Add HTTP headers specified by --custom-header for each resource request.
+            ("no-custom-header-propagation", None), // Do not add HTTP headers specified by --custom-header for each resource request.
+            ("debug-javascript", None),             // Show javascript debugging output
+            ("no-debug-javascript", None), // Do not show javascript debugging output (default)
+            ("encoding", None),            // Set the default text encoding, for input
+            ("format", Some(ImgApp::default_extension())), // Output format
+            ("height", None), // Set screen height (default is calculated from page content) (default 0)
+            ("images", None), // Do load or print images (default)
+            ("no-images", None), // Do not load or print images
+            ("disable-javascript", None), // Do not allow web pages to run javascript
+            ("enable-javascript", None), // Do allow web pages to run javascript (default)
+            ("javascript-delay", None), // Wait some milliseconds for javascript finish (default 200)
+            ("load-error-handling", None), // Specify how to handle pages that fail to load: abort, ignore or skip (default abort)
+            ("load-media-error-handling", None), // Specify how to handle media files that fail to load: abort, ignore or skip (default ignore)
+            ("disable-local-file-access", None), // Do not allowed conversion of a local file to read in other local files, unless explicitly allowed with allow
+            ("enable-local-file-access", None), // Allowed conversion of a local file to read in other local files. (default)
+            ("minimum-font-size", None),        // Minimum font size
+            ("password", None),                 // HTTP Authentication password
+            ("disable-plugins", None),          // Disable installed plugins (default)
+            ("enable-plugins", None), // Enable installed plugins (plugins will likely not work)
+            ("post", None),           // Add an additional post field
+            ("post-file", None),      // Post an additional file
+            ("proxy", None),          // Use a proxy
+            ("quality", None),        // Output image quality (between 0 and 100) (default 94)
+            ("quiet", None),          // Be less verbose
+            ("radiobutton-checked-svg", None), // Use this SVG file when rendering checked radio-buttons
+            ("radiobutton-svg", None), // Use this SVG file when rendering unchecked radio-buttons
+            ("run-script", None), // Run this additional javascript after the page is done loading (repeatable)
+            ("disable-smart-width", None), // Use the specified width even if it is not large enough for the content
+            ("enable-smart-width", None),  // Extend --width to fit unbreakable content (default)
+            ("stop-slow-scripts", None),   // Stop slow running javascript
+            ("no-stop-slow-scripts", None), // Do not stop slow running javascript (default)
+            ("transparent", None),         // Make the background transparent in pngs *
+            ("use-xserver", None), // Use the X server (some plugins and other stuff might not work without X11)
+            ("user-style-sheet", None), // Specify a user style sheet, to load with every page
+            ("username", None),    // HTTP Authentication username
+            ("width", None),       // Set screen width (default is 1024)
+            ("window-status", None), // Wait until window.status is equal to this string before rendering page
+            ("zoom", None),          // Use this zoom factor (default 1)
         ])
     }
 }

@@ -4,12 +4,12 @@ use std::collections::HashMap;
 use std::env;
 
 #[derive(Debug, Clone)]
-pub struct PdfApp {
+pub struct PdfApp<'a> {
     pub app: App,
-    pub options: HashMap<String, Option<String>>,
+    pub options: HashMap<&'a str, Option<&'a str>>,
 }
 
-impl PdfApp {
+impl<'a> PdfApp<'a> {
     pub fn new() -> Result<Self, WkhtmlError> {
         let wkhtmltopdf_cmd =
             env::var("WKHTMLTOPDF_CMD").unwrap_or_else(|_| "wkhtmltopdf".to_string());
@@ -25,15 +25,15 @@ impl PdfApp {
         for (key, value) in &self.options {
             match value {
                 Some(v) => {
-                    if v != "false" {
-                        if v == "true" {
-                            if key == "toc" || key == "cover" {
+                    if *v != "false" {
+                        if *v == "true" {
+                            if *key == "toc" || *key == "cover" {
                                 args.push(key.to_string());
                             } else {
                                 args.push(format!("--{}", key));
                             }
                         } else {
-                            if key == "toc" || key == "cover" {
+                            if *key == "toc" || *key == "cover" {
                                 args.push(key.to_string());
                             } else {
                                 args.push(format!("--{}", key));
@@ -56,17 +56,17 @@ impl PdfApp {
 
     pub fn set_args(
         &mut self,
-        args: HashMap<String, Option<String>>,
+        args: HashMap<&'a str, Option<&'a str>>,
     ) -> Result<&mut Self, WkhtmlError> {
         for (key, value) in args {
-            self.set_arg(&key, value)?;
+            self.set_arg(key, value)?;
         }
         Ok(self)
     }
 
-    pub fn set_arg(&mut self, key: &str, arg: Option<String>) -> Result<&mut Self, WkhtmlError> {
+    pub fn set_arg(&mut self, key: &'a str, arg: Option<&'a str>) -> Result<&mut Self, WkhtmlError> {
         if self.options.contains_key(key) {
-            self.options.insert(key.to_string(), arg);
+            self.options.insert(key, arg);
             Ok(self)
         } else {
             Err(WkhtmlError::ServiceErr(format!("Invalid option: {}", key)))
@@ -82,147 +82,147 @@ impl PdfApp {
         }
     }
 
-    fn default_options() -> HashMap<String, Option<String>> {
+    fn default_options() -> HashMap<&'static str, Option<&'a str>> {
         HashMap::from([
             // Global options
-            ("collate".to_string(), None),
-            ("no-collate".to_string(), None),
-            ("cookie-jar".to_string(), None),
-            ("copies".to_string(), None),
-            ("dpi".to_string(), None),
-            ("extended-help".to_string(), None),
-            ("grayscale".to_string(), None),
-            ("help".to_string(), None),
-            ("htmldoc".to_string(), None),
-            ("ignore-load-errors".to_string(), None), // old v0.9
-            ("image-dpi".to_string(), None),
-            ("image-quality".to_string(), None),
-            ("license".to_string(), None),
-            ("log-level".to_string(), None),
-            ("lowquality".to_string(), None),
-            ("manpage".to_string(), None),
-            ("margin-bottom".to_string(), None),
-            ("margin-left".to_string(), None),
-            ("margin-right".to_string(), None),
-            ("margin-top".to_string(), None),
-            ("orientation".to_string(), None),
-            ("page-height".to_string(), None),
-            ("page-size".to_string(), None),
-            ("page-width".to_string(), None),
-            ("no-pdf-compression".to_string(), None),
-            ("quiet".to_string(), None),
-            ("read-args-from-stdin".to_string(), None),
-            ("readme".to_string(), None),
-            ("title".to_string(), None),
-            ("use-xserver".to_string(), None),
-            ("version".to_string(), None),
+            ("collate", None),
+            ("no-collate", None),
+            ("cookie-jar", None),
+            ("copies", None),
+            ("dpi", None),
+            ("extended-help", None),
+            ("grayscale", None),
+            ("help", None),
+            ("htmldoc", None),
+            ("ignore-load-errors", None), // old v0.9
+            ("image-dpi", None),
+            ("image-quality", None),
+            ("license", None),
+            ("log-level", None),
+            ("lowquality", None),
+            ("manpage", None),
+            ("margin-bottom", None),
+            ("margin-left", None),
+            ("margin-right", None),
+            ("margin-top", None),
+            ("orientation", None),
+            ("page-height", None),
+            ("page-size", None),
+            ("page-width", None),
+            ("no-pdf-compression", None),
+            ("quiet", None),
+            ("read-args-from-stdin", None),
+            ("readme", None),
+            ("title", None),
+            ("use-xserver", None),
+            ("version", None),
             // Outline options
-            ("dump-default-toc-xsl".to_string(), None),
-            ("dump-outline".to_string(), None),
-            ("outline".to_string(), None),
-            ("no-outline".to_string(), None),
-            ("outline-depth".to_string(), None),
-            ("output-format".to_string(), None),
+            ("dump-default-toc-xsl", None),
+            ("dump-outline", None),
+            ("outline", None),
+            ("no-outline", None),
+            ("outline-depth", None),
+            ("output-format", None),
             // Page options
-            ("allow".to_string(), None),
-            ("background".to_string(), None),
-            ("no-background".to_string(), None),
-            ("bypass-proxy-for".to_string(), None),
-            ("cache-dir".to_string(), None),
-            ("checkbox-checked-svg".to_string(), None),
-            ("checkbox-svg".to_string(), None),
-            ("cookie".to_string(), None),
-            ("custom-header".to_string(), None),
-            ("custom-header-propagation".to_string(), None),
-            ("no-custom-header-propagation".to_string(), None),
-            ("debug-javascript".to_string(), None),
-            ("no-debug-javascript".to_string(), None),
-            ("default-header".to_string(), None),
-            ("encoding".to_string(), None),
-            ("disable-external-links".to_string(), None),
-            ("enable-external-links".to_string(), None),
-            ("disable-forms".to_string(), None),
-            ("enable-forms".to_string(), None),
-            ("images".to_string(), None),
-            ("no-images".to_string(), None),
-            ("disable-internal-links".to_string(), None),
-            ("enable-internal-links".to_string(), None),
-            ("disable-javascript".to_string(), None),
-            ("enable-javascript".to_string(), None),
-            ("javascript-delay".to_string(), None),
-            ("keep-relative-links".to_string(), None),
-            ("load-error-handling".to_string(), None),
-            ("load-media-error-handling".to_string(), None),
-            ("disable-local-file-access".to_string(), None),
-            ("enable-local-file-access".to_string(), None),
-            ("minimum-font-size".to_string(), None),
-            ("exclude-from-outline".to_string(), None),
-            ("include-in-outline".to_string(), None),
-            ("page-offset".to_string(), None),
-            ("password".to_string(), None),
-            ("disable-plugins".to_string(), None),
-            ("enable-plugins".to_string(), None),
-            ("post".to_string(), None),
-            ("post-file".to_string(), None),
-            ("print-media-type".to_string(), None),
-            ("no-print-media-type".to_string(), None),
-            ("proxy".to_string(), None),
-            ("proxy-hostname-lookup".to_string(), None),
-            ("radiobutton-checked-svg".to_string(), None),
-            ("radiobutton-svg".to_string(), None),
-            ("redirect-delay".to_string(), None), // old v0.9
-            ("resolve-relative-links".to_string(), None),
-            ("run-script".to_string(), None),
-            ("disable-smart-shrinking".to_string(), None),
-            ("enable-smart-shrinking".to_string(), None),
-            ("ssl-crt-path".to_string(), None),
-            ("ssl-key-password".to_string(), None),
-            ("ssl-key-path".to_string(), None),
-            ("stop-slow-scripts".to_string(), None),
-            ("no-stop-slow-scripts".to_string(), None),
-            ("disable-toc-back-links".to_string(), None),
-            ("enable-toc-back-links".to_string(), None),
-            ("user-style-sheet".to_string(), None),
-            ("username".to_string(), None),
-            ("viewport-size".to_string(), None),
-            ("window-status".to_string(), None),
-            ("zoom".to_string(), None),
+            ("allow", None),
+            ("background", None),
+            ("no-background", None),
+            ("bypass-proxy-for", None),
+            ("cache-dir", None),
+            ("checkbox-checked-svg", None),
+            ("checkbox-svg", None),
+            ("cookie", None),
+            ("custom-header", None),
+            ("custom-header-propagation", None),
+            ("no-custom-header-propagation", None),
+            ("debug-javascript", None),
+            ("no-debug-javascript", None),
+            ("default-header", None),
+            ("encoding", None),
+            ("disable-external-links", None),
+            ("enable-external-links", None),
+            ("disable-forms", None),
+            ("enable-forms", None),
+            ("images", None),
+            ("no-images", None),
+            ("disable-internal-links", None),
+            ("enable-internal-links", None),
+            ("disable-javascript", None),
+            ("enable-javascript", None),
+            ("javascript-delay", None),
+            ("keep-relative-links", None),
+            ("load-error-handling", None),
+            ("load-media-error-handling", None),
+            ("disable-local-file-access", None),
+            ("enable-local-file-access", None),
+            ("minimum-font-size", None),
+            ("exclude-from-outline", None),
+            ("include-in-outline", None),
+            ("page-offset", None),
+            ("password", None),
+            ("disable-plugins", None),
+            ("enable-plugins", None),
+            ("post", None),
+            ("post-file", None),
+            ("print-media-type", None),
+            ("no-print-media-type", None),
+            ("proxy", None),
+            ("proxy-hostname-lookup", None),
+            ("radiobutton-checked-svg", None),
+            ("radiobutton-svg", None),
+            ("redirect-delay", None), // old v0.9
+            ("resolve-relative-links", None),
+            ("run-script", None),
+            ("disable-smart-shrinking", None),
+            ("enable-smart-shrinking", None),
+            ("ssl-crt-path", None),
+            ("ssl-key-password", None),
+            ("ssl-key-path", None),
+            ("stop-slow-scripts", None),
+            ("no-stop-slow-scripts", None),
+            ("disable-toc-back-links", None),
+            ("enable-toc-back-links", None),
+            ("user-style-sheet", None),
+            ("username", None),
+            ("viewport-size", None),
+            ("window-status", None),
+            ("zoom", None),
             // Headers and footer options
-            ("footer-center".to_string(), None),
-            ("footer-font-name".to_string(), None),
-            ("footer-font-size".to_string(), None),
-            ("footer-html".to_string(), None),
-            ("footer-left".to_string(), None),
-            ("footer-line".to_string(), None),
-            ("no-footer-line".to_string(), None),
-            ("footer-right".to_string(), None),
-            ("footer-spacing".to_string(), None),
-            ("header-center".to_string(), None),
-            ("header-font-name".to_string(), None),
-            ("header-font-size".to_string(), None),
-            ("header-html".to_string(), None),
-            ("header-left".to_string(), None),
-            ("header-line".to_string(), None),
-            ("no-header-line".to_string(), None),
-            ("header-right".to_string(), None),
-            ("header-spacing".to_string(), None),
-            ("replace".to_string(), None),
+            ("footer-center", None),
+            ("footer-font-name", None),
+            ("footer-font-size", None),
+            ("footer-html", None),
+            ("footer-left", None),
+            ("footer-line", None),
+            ("no-footer-line", None),
+            ("footer-right", None),
+            ("footer-spacing", None),
+            ("header-center", None),
+            ("header-font-name", None),
+            ("header-font-size", None),
+            ("header-html", None),
+            ("header-left", None),
+            ("header-line", None),
+            ("no-header-line", None),
+            ("header-right", None),
+            ("header-spacing", None),
+            ("replace", None),
             // Cover object
-            ("cover".to_string(), None),
+            ("cover", None),
             // TOC object
-            ("toc".to_string(), None),
+            ("toc", None),
             // TOC options
-            ("disable-dotted-lines".to_string(), None),
-            ("toc-depth".to_string(), None),        // old v0.9
-            ("toc-font-name".to_string(), None),    // old v0.9
-            ("toc-l1-font-size".to_string(), None), // old v0.9
-            ("toc-header-text".to_string(), None),
-            ("toc-header-font-name".to_string(), None), // old v0.9
-            ("toc-header-font-size".to_string(), None), // old v0.9
-            ("toc-level-indentation".to_string(), None),
-            ("disable-toc-links".to_string(), None),
-            ("toc-text-size-shrink".to_string(), None),
-            ("xsl-style-sheet".to_string(), None),
+            ("disable-dotted-lines", None),
+            ("toc-depth", None),        // old v0.9
+            ("toc-font-name", None),    // old v0.9
+            ("toc-l1-font-size", None), // old v0.9
+            ("toc-header-text", None),
+            ("toc-header-font-name", None), // old v0.9
+            ("toc-header-font-size", None), // old v0.9
+            ("toc-level-indentation", None),
+            ("disable-toc-links", None),
+            ("toc-text-size-shrink", None),
+            ("xsl-style-sheet", None),
         ])
     }
 }

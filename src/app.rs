@@ -9,10 +9,10 @@ const USE_STDIN_MARKER: &str = "-";
 const NO_WKHTMLTOPDF_ERR: &str = "wkhtmltopdf tool is not found. Please install it.";
 
 #[derive(Debug, Clone)]
-pub enum WkhtmlInput {
-    File(String),
-    Url(String),
-    Html(String),
+pub enum WkhtmlInput<'a> {
+    File(&'a str),
+    Url(&'a str),
+    Html(&'a str),
 }
 
 #[derive(Debug, Clone)]
