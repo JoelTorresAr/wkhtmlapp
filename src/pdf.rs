@@ -1,11 +1,12 @@
 use crate::app::WkhtmlError;
-use crate::app::{App, WkhtmlInput};
+use crate::core::Core;
+use crate::app::WkhtmlInput;
 use std::collections::HashMap;
 use std::env;
 
 #[derive(Debug, Clone)]
 pub struct PdfApp<'a> {
-    pub app: App,
+    pub app: Core,
     pub options: HashMap<&'a str, &'a str>,
 }
 
@@ -15,7 +16,7 @@ impl<'a> PdfApp<'a> {
             env::var("WKHTMLTOPDF_CMD").unwrap_or_else(|_| "wkhtmltopdf".to_string());
 
         Ok(Self {
-            app: App::new(wkhtmltopdf_cmd)?,
+            app: Core::new(wkhtmltopdf_cmd)?,
             options: Self::default_options(),
         })
     }

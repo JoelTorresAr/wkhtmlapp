@@ -1,5 +1,6 @@
 use crate::app::WkhtmlError;
-use crate::app::{App, WkhtmlInput};
+use crate::app::WkhtmlInput;
+use crate::core::Core;
 use std::collections::HashMap;
 use std::env;
 
@@ -25,7 +26,7 @@ impl std::fmt::Display for ImgFormat {
 
 #[derive(Debug, Clone)]
 pub struct ImgApp<'a> {
-    pub app: App,
+    pub app: Core,
     pub options: HashMap<&'a str, &'a str>,
     pub format: ImgFormat,
 }
@@ -36,7 +37,7 @@ impl<'a> ImgApp<'a> {
             env::var("WKHTMLTOIMG_CMD").unwrap_or_else(|_| "wkhtmltoimage".to_string());
 
         Ok(Self {
-            app: App::new(wkhtmltoimg_cmd)?,
+            app: Core::new(wkhtmltoimg_cmd)?,
             options: Self::default_options(),
             format: ImgFormat::Jpg,
         })

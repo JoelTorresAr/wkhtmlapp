@@ -1,6 +1,7 @@
-pub mod app;
-pub mod img;
-pub mod pdf;
+mod core;
+mod app;
+mod pdf;
+mod img;
 pub use app::*;
 pub use img::*;
 pub use pdf::*;
