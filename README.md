@@ -45,7 +45,7 @@ fn main() -> Result<(), WkhtmlError> {
         .set_arg("margin-top", "18")?;
 
     let report = app_report.run(
-        wkhtmlapp::app::WkhtmlInput::Url("https://www.w3schools.com/graphics/svg_intro.asp"),
+        wkhtmlapp::WkhtmlInput::Url("https://www.w3schools.com/graphics/svg_intro.asp"),
         "demo",
     )?;
     println!("report: {:?}", report);
