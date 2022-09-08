@@ -25,15 +25,15 @@ impl std::fmt::Display for WkhtmlError {
 
 #[derive(Debug, Clone)]
 pub struct App<'a> {
-    pub wkhtmltopdf_cmd: PdfApp<'a>,
-    pub wkhtmltoimg_cmd: ImgApp<'a>,
+    pub pdf_app: PdfApp<'a>,
+    pub img_app: ImgApp<'a>,
 }
 
 impl <'a>App<'a> {
     pub fn new() -> Result<Self, WkhtmlError> {
         Ok(Self {
-            wkhtmltopdf_cmd: PdfApp::new()?,
-            wkhtmltoimg_cmd: ImgApp::new()?,
+            pdf_app: PdfApp::new()?,
+            img_app: ImgApp::new()?,
         })
     }
 }
