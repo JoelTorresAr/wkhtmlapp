@@ -1,6 +1,6 @@
 [package]
 authors = ["Torres Farro Denis Joel <djoel_torres@hotmail.com>"]
-description = "Bindings to wkhtmltopdf and wkhtmltoimage"
+description = "Convert html to pdf or image"
 documentation = "https://github.com/JoelTorresAr/wkhtmlapp.git"
 edition = "2021"
 keywords = ["wkhtmltopdf", "wkhtmltoimage", "pdf", "image", "html"]
@@ -14,7 +14,7 @@ exclude = ["/storage","/target"]
 [dependencies]
 dotenv = "0.15.0"
 log = "0.4.14"
-uuid = {version = "0.8.2", features = ["serde", "v4"]}
+uuid = {version = "1.1.2", features = ["serde", "v4"]}
 
 [dev-dependencies]
-env_logger = "0.7"
+env_logger = "0.9.0"

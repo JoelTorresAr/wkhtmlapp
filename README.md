@@ -1,7 +1,10 @@
 # wkhtmlapp
 ## _Bindings to wkhtmltopdf and wkhtmltoimage_
 
-wkhtmlapp makes use of wkhtmltopdf and wkhtmltoimage, command line tools to generate PDF and Images. The library when using command lines to use wkhtmltox allows it to be instantiated the number of times required without causing any errors. This library was developed inspired by barryvdh's laravel-snappy.
+
+wkhtmlapp depends on the wkhtmltopdf application to generate PDFs or images, abstracted in such a 
+way that it can support multithreading without damaging the main instance. 
+This library was developed inspired by barryvdh's laravel-snappy.
 
 | Resource          | Link                                                                                                                      |
 | ----------------- | ------------------------------------------------------------------------------------------------------------------------- |
@@ -10,6 +13,16 @@ wkhtmlapp makes use of wkhtmltopdf and wkhtmltoimage, command line tools to gene
 | Upstream          | [wkhtmltopdf.org](http://wkhtmltopdf.org/)                                                                                |
 | Wkhtmltox Version | [wkhtmltox-0.12.6-1](https://github.com/wkhtmltopdf/packaging/releases)                                                   |
 -----
+## _Required setup before use_
+ - set wkhtmltopdf in path system environment variables or download the portable versions 
+   of wkhtmltopdf for your operating system, store them and reference it in the .env file 
+   using WKHTMLTOPDF_CMD and WKHTMLTOIMG_CMD respectively.
+   ```sh
+   #.env
+   WKHTMLAPP_WORK_DIR="storage/temp"
+   WKHTMLTOPDF_CMD="assets/bin/wkhtmltopdf/0.16/wkhtmltopdf"
+   WKHTMLTOIMG_CMD="assets/bin/wkhtmltopdf/0.16/wkhtmltoimage"
+```
 
 ### THIS IS A BETA CRATE, ONLY SOME ARGUMENTS HAVE BEEN VERIFIED, USE WITH CAUTION
 
@@ -22,8 +35,12 @@ wkhtmlapp makes use of wkhtmltopdf and wkhtmltoimage, command line tools to gene
 ##  _Change Logs_
 
 ### 0.1.5
+ - You can instantiate PdfApp or ImgApp which will only serve to generate pdf's or images 
+   respectively or instantiate WkhtmlApp which gives you access to both
 
+### 0.1.5
  - Arg value is no longer optional
+
 ### 0.1.4
 
  - Lifetime was implemented, allowing to use str instead of String in sending arguments
@@ -75,19 +92,6 @@ let file_path = pdf_app.run(
             .set_format(ImgFormat::Png)?
             .set_args(args)?
             .run(WkhtmlInput::File("examples/index.html"), "demo")?;
-```
-
-## Args
-
-```sh
-let mut image_app = ImgApp::new().expect("Failed to init image Application");
-
-        let mut pdf_app = PdfApp::new().expect("Failed to init PDF Application");
-        pdf_app.set_arg("margin-top", "0")?;
-
-        // Test building PDF from HTML
-        let html_code = r#"<html><body><div>DEMO</div></body></html>"#;
-        let file_path = pdf_app.run(WkhtmlInput::Html(html_code), "demo")?;
 ```
 ##  _ImgApp Args_
 | Option                       | Description                                                                                                  |
