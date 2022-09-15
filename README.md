@@ -34,9 +34,9 @@ This library was developed inspired by barryvdh's laravel-snappy.
 
 ##  _Change Logs_
 
-### 0.1.5
+### 0.2.0
  - You can instantiate PdfApp or ImgApp which will only serve to generate pdf's or images 
-   respectively or instantiate WkhtmlApp which gives you access to both
+   respectively or instantiate App which gives you access to both
 
 ### 0.1.5
  - Arg value is no longer optional
@@ -54,8 +54,8 @@ This library was developed inspired by barryvdh's laravel-snappy.
 ```sh
 use wkhtmlapp::WkhtmlError;
 fn main() -> Result<(), WkhtmlError> {
-    let mut app = wkhtmlapp::PdfApp::new()?;
-    let app_report = app
+    let mut app = wkhtmlapp::App::new()?;
+    let app_report = app.pdf_app
         .set_arg("enable-smart-shrinking", "true")?
         .set_arg("title", "Torres")?
         .set_arg("header-right", "Página [page] de [toPage]")?
