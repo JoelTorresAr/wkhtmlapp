@@ -18,7 +18,7 @@ This library was developed inspired by barryvdh's laravel-snappy.
    of wkhtmltopdf for your operating system, store them and reference it in the .env file 
    using WKHTMLTOPDF_CMD and WKHTMLTOIMG_CMD respectively.
    ```sh
-   #.env
+   //.env
    WKHTMLAPP_WORK_DIR="storage/temp"
    WKHTMLTOPDF_CMD="assets/bin/wkhtmltopdf/0.16/wkhtmltopdf"
    WKHTMLTOIMG_CMD="assets/bin/wkhtmltopdf/0.16/wkhtmltoimage"
