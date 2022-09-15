@@ -24,7 +24,7 @@ This library was developed inspired by barryvdh's laravel-snappy.
    WKHTMLTOIMG_CMD="assets/bin/wkhtmltopdf/0.16/wkhtmltoimage"
 ```
 
-### THIS IS A BETA CRATE, ONLY SOME ARGUMENTS HAVE BEEN VERIFIED, USE WITH CAUTION
+### ONLY SOME ARGUMENTS HAVE BEEN VERIFIED, USE WITH CAUTION
 
 ## Features
 
