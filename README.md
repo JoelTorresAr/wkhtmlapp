@@ -34,6 +34,9 @@ This library was developed inspired by barryvdh's laravel-snappy.
 
 ##  _Change Logs_
 
+### 1.0.0
+ - Successfully tested with actix-web on windows and linux systems
+
 ### 0.2.0
  - You can instantiate PdfApp or ImgApp which will only serve to generate pdf's or images 
    respectively or instantiate App which gives you access to both
