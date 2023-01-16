@@ -5,12 +5,12 @@ use std::collections::HashMap;
 use std::env;
 
 #[derive(Debug, Clone)]
-pub struct PdfApp<'a> {
+pub struct PdfApp{
     pub app: Core,
-    pub options: HashMap<&'a str, &'a str>,
+    pub options: HashMap<String, String>,
 }
 
-impl<'a> PdfApp<'a> {
+impl PdfApp {
     pub fn new() -> Result<Self, WkhtmlError> {
         let wkhtmltopdf_cmd =
             env::var("WKHTMLTOPDF_CMD").unwrap_or_else(|_| "wkhtmltopdf".to_string());
@@ -50,16 +50,16 @@ impl<'a> PdfApp<'a> {
         Ok(self)
     }
 
-    pub fn set_args(&mut self, args: HashMap<&'a str, &'a str>) -> Result<&mut Self, WkhtmlError> {
+    pub fn set_args(&mut self, args: HashMap<&str, &str>) -> Result<&mut Self, WkhtmlError> {
         for (key, value) in args {
             self.set_arg(key, value)?;
         }
         Ok(self)
     }
 
-    pub fn set_arg(&mut self, key: &'a str, arg: &'a str) -> Result<&mut Self, WkhtmlError> {
+    pub fn set_arg(&mut self, key: &str, arg: &str) -> Result<&mut Self, WkhtmlError> {
         if Self::validate_option(key) {
-            self.options.insert(key, arg);
+            self.options.insert(key.into(), arg.into());
             Ok(self)
         } else {
             Err(WkhtmlError::ServiceErr(format!("Invalid option: {}", key)))
@@ -75,7 +75,7 @@ impl<'a> PdfApp<'a> {
         }
     }
 
-    fn default_options() -> HashMap<&'static str, &'a str> {
+    fn default_options() -> HashMap<String, String> {
         HashMap::from([])
     }
 

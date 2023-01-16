@@ -25,13 +25,13 @@ impl std::fmt::Display for ImgFormat {
 }
 
 #[derive(Debug, Clone)]
-pub struct ImgApp<'a> {
+pub struct ImgApp {
     pub app: Core,
-    pub options: HashMap<&'a str, &'a str>,
+    pub options: HashMap<String, String>,
     pub format: ImgFormat,
 }
 
-impl<'a> ImgApp<'a> {
+impl ImgApp {
     pub fn new() -> Result<Self, WkhtmlError> {
         let wkhtmltoimg_cmd =
             env::var("WKHTMLTOIMG_CMD").unwrap_or_else(|_| "wkhtmltoimage".to_string());
@@ -81,16 +81,16 @@ impl<'a> ImgApp<'a> {
         Ok(self)
     }
 
-    pub fn set_args(&mut self, args: HashMap<&'a str, &'a str>) -> Result<&mut Self, WkhtmlError> {
+    pub fn set_args(&mut self, args: HashMap<&str, &str>) -> Result<&mut Self, WkhtmlError> {
         for (key, value) in args {
             self.set_arg(&key, value)?;
         }
         Ok(self)
     }
 
-    pub fn set_arg(&mut self, key: &'a str, arg: &'a str) -> Result<&mut Self, WkhtmlError> {
+    pub fn set_arg(&mut self, key: &str, arg: &str) -> Result<&mut Self, WkhtmlError> {
         if Self::validate_option(key) {
-            self.options.insert(key, arg);
+            self.options.insert(key.into(), arg.into());
             Ok(self)
         } else {
             Err(WkhtmlError::ServiceErr(format!("Invalid option: {}", key)))
@@ -106,11 +106,11 @@ impl<'a> ImgApp<'a> {
         }
     }
 
-    pub fn default_extension() -> &'a str {
-        "jpg"
+    pub fn default_extension() -> String {
+        "jpg".into()
     }
 
-    fn default_options() -> HashMap<&'a str, &'a str> {
+    fn default_options() -> HashMap<String, String> {
         HashMap::from([])
     }
 
