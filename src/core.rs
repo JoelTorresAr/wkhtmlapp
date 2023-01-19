@@ -77,8 +77,11 @@ impl Core {
     }
 
     pub fn get_debug() -> bool {
-        println!("debug-----------: {}", cfg!(debug_assertions));
-        cfg!(debug_assertions)
+        if let Ok(value) = env::var("APP_DEBUG"){
+            value == "true"
+        }else{
+            cfg!(debug_assertions)
+        }
     }
 
     pub fn depure(output: &Output) {
