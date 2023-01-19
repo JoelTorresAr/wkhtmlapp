@@ -77,7 +77,8 @@ impl Core {
     }
 
     pub fn get_debug() -> bool {
-        env::var("APP_DEBUG").unwrap_or_else(|_| "true".to_string()) == "true"
+        println!("debug-----------: {}", cfg!(debug_assertions));
+        cfg!(debug_assertions)
     }
 
     pub fn depure(output: &Output) {
