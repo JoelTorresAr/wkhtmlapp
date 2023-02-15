@@ -77,9 +77,9 @@ impl Core {
     }
 
     pub fn get_debug() -> bool {
-        if let Ok(value) = env::var("APP_DEBUG"){
+        if let Ok(value) = env::var("APP_DEBUG") {
             value == "true"
-        }else{
+        } else {
             cfg!(debug_assertions)
         }
     }
@@ -138,12 +138,11 @@ impl Core {
             WkhtmlError::RenderingErr(format!("Failed to spawn child process: {}", e))
         })?;
 
-        debug!("Running command: {:?}", cmd);
-
         let output = child.wait_with_output().map_err(|e| {
             WkhtmlError::RenderingErr(format!("Failed to spawn child process: {}", e))
         })?;
 
+        #[cfg(debug_assertions)]
         Self::depure(&output);
 
         if output.status.success() {
@@ -178,12 +177,11 @@ impl Core {
             WkhtmlError::RenderingErr(format!("Failed to spawn child process: {}", e))
         })?;
 
-        debug!("Running command: {:?}", cmd);
-
         let output = child.wait_with_output().map_err(|e| {
             WkhtmlError::RenderingErr(format!("Failed to spawn child process: {}", e))
         })?;
 
+        #[cfg(debug_assertions)]
         Self::depure(&output);
 
         if output.status.success() {
@@ -214,8 +212,6 @@ impl Core {
             cmd.stderr(Stdio::piped());
         }
 
-        debug!("Running command: {:?}", cmd);
-
         let mut child = cmd.spawn().map_err(|e| {
             WkhtmlError::RenderingErr(format!("Failed to spawn child process: {}", e))
         })?;
@@ -233,6 +229,7 @@ impl Core {
             WkhtmlError::RenderingErr(format!("Failed to wait for child process: {}", e))
         })?;
 
+        #[cfg(debug_assertions)]
         Self::depure(&output);
 
         if output.status.success() {
