@@ -13,7 +13,6 @@ pub enum WkhtmlError {
     RenderingErr(String),
 }
 
-// wkhtmlerror display
 impl std::fmt::Display for WkhtmlError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
@@ -22,6 +21,8 @@ impl std::fmt::Display for WkhtmlError {
         }
     }
 }
+
+impl std::error::Error for WkhtmlError {}
 
 #[derive(Debug, Clone)]
 pub struct App {

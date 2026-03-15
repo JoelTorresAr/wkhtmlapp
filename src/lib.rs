@@ -13,7 +13,7 @@ mod tests {
 
     #[test]
     fn test_pdf() {
-        let _ = env_logger::init();
+        let _ = env_logger::try_init();
         let mut pdf_app = PdfApp::new().expect("Failed to init PDF Application");
         let args = HashMap::from([("enable-smart-shrinking", "true")]);
         pdf_app.set_args(args).unwrap();
@@ -22,6 +22,7 @@ mod tests {
         let html_code = r#"<html><body><div>DEMO</div></body></html>"#;
         let res = pdf_app.run(WkhtmlInput::Html(html_code), "demo");
         assert!(res.is_ok(), "{}", res.unwrap_err());
+        assert!(res.unwrap().extension().unwrap() == "pdf");
 
         // Test building PDF from file
         let res = pdf_app.run(WkhtmlInput::File("examples/index.html"), "demo");
@@ -34,6 +35,7 @@ mod tests {
 
     #[test]
     fn test_img() {
+        let _ = env_logger::try_init();
         // Test building image from FILE
         let mut image_app = ImgApp::new().expect("Failed to init image Application");
         let args = HashMap::from([("height", "100"), ("width", "100")]);

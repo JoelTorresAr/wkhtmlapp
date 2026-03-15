@@ -14,11 +14,13 @@ This library was developed inspired by barryvdh's laravel-snappy.
 | Wkhtmltox Version | [wkhtmltox-0.12.6-1](https://github.com/wkhtmltopdf/packaging/releases)                                                   |
 -----
 ## _Required setup before use_
- - set wkhtmltopdf in path system environment variables or download the portable versions 
-   of wkhtmltopdf for your operating system, store them and reference it in the .env file 
-   using WKHTMLTOPDF_CMD and WKHTMLTOIMG_CMD respectively.
+ - Set wkhtmltopdf in your system PATH, or download the portable versions
+   of wkhtmltopdf for your operating system and reference them via environment variables.
+ - **Note:** Since v1.1.0, this library no longer loads `.env` files automatically.
+   If you need `.env` support, load it in your application (e.g., using `dotenvy` or `dotenv`).
+
+Environment variables:
 ```sh
-   //.env
    WKHTMLAPP_WORK_DIR="storage/temp"
    WKHTMLTOPDF_CMD="assets/bin/wkhtmltopdf/0.16/wkhtmltopdf"
    WKHTMLTOIMG_CMD="assets/bin/wkhtmltopdf/0.16/wkhtmltoimage"
@@ -34,11 +36,20 @@ This library was developed inspired by barryvdh's laravel-snappy.
 
 ##  _Change Logs_
 
+### 1.1.0
+ - **`WkhtmlError` implements `std::error::Error`**: Now compatible with `?` operator, `anyhow`, `thiserror` and the standard Rust error ecosystem.
+ - **Removed `dotenv` dependency**: The library no longer forces `.env` loading. This is now responsibility of the consuming application. Reduces coupling and dependency footprint.
+ - **`run()` returns `PathBuf` instead of `String`**: Output file paths are now returned as `std::path::PathBuf`, which is more idiomatic for file system operations in Rust.
+ - **`HashSet` for option validation**: Replaced `Vec` linear search with `HashSet` using `LazyLock` for O(1) lookups. Improves validation performance with 140+ options.
+ - **`Default` for `ImgFormat`**: `ImgFormat` now implements `Default` (defaults to `Jpg`).
+ - **Deduplicated `build_args` logic**: The argument building logic was duplicated in `PdfApp` and `ImgApp`. Now consolidated into `Core::build_args()`.
+ - **Updated dependencies**: `log` to `0.4`, `uuid` to `1` (removed unused `serde` feature), `env_logger` to `0.11`.
+
 ### 1.0.0
  - Successfully tested with actix-web on windows and linux systems
 
 ### 0.2.0
- - You can instantiate PdfApp or ImgApp which will only serve to generate pdf's or images 
+ - You can instantiate PdfApp or ImgApp which will only serve to generate pdf's or images
    respectively or instantiate App which gives you access to both
 
 ### 0.1.5
@@ -54,7 +65,7 @@ This library was developed inspired by barryvdh's laravel-snappy.
 
 ## Example
 
-```sh
+```rust
 use wkhtmlapp::WkhtmlError;
 fn main() -> Result<(), WkhtmlError> {
     let mut app = wkhtmlapp::App::new()?;
@@ -64,6 +75,7 @@ fn main() -> Result<(), WkhtmlError> {
         .set_arg("header-right", "Página [page] de [toPage]")?
         .set_arg("margin-top", "18")?;
 
+    // run() returns a PathBuf with the generated file path
     let report = app_report.run(
         wkhtmlapp::WkhtmlInput::Url("https://www.w3schools.com/graphics/svg_intro.asp"),
         "demo",
@@ -75,9 +87,10 @@ fn main() -> Result<(), WkhtmlError> {
 
 ## PDF Examples
 
-```sh
+```rust
 let pdf_app = PdfApp::new().expect("Failed to init PDF Application");
 let html_code = r#"<html><body><div>DEMO</div></body></html>"#;
+// All run() calls return std::path::PathBuf
 let file_path = pdf_app.run(WkhtmlInput::Html(html_code),"demo")?;
 let file_path = pdf_app.run(WkhtmlInput::File("examples/index.html"), "demo")?;
 let file_path = pdf_app.run(
@@ -87,14 +100,14 @@ let file_path = pdf_app.run(
 ```
 ## IMG Examples
 
-```sh
-        let mut image_app = ImgApp::new().expect("Failed to init image Application");
-        let args = HashMap::from([("height", "20"), ("width", "20")]);
+```rust
+let mut image_app = ImgApp::new().expect("Failed to init image Application");
+let args = HashMap::from([("height", "20"), ("width", "20")]);
 
-        let res = image_app
-            .set_format(ImgFormat::Png)?
-            .set_args(args)?
-            .run(WkhtmlInput::File("examples/index.html"), "demo")?;
+let res = image_app
+    .set_format(ImgFormat::Png)?
+    .set_args(args)?
+    .run(WkhtmlInput::File("examples/index.html"), "demo")?;
 ```
 ##  _ImgApp Args_
 | Option                       | Description                                                                                                  |

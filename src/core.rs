@@ -2,6 +2,7 @@ use crate::{WkhtmlError, WkhtmlInput};
 
 use self::uuid::Uuid;
 use log::{debug, error, info};
+use std::collections::HashMap;
 use std::path::PathBuf;
 use std::process::{Command, Output, Stdio};
 use std::{env, fs, io::Write};
@@ -18,7 +19,6 @@ pub struct Core {
 
 impl Core {
     pub fn new(wkhtmltox_cmd: String) -> Result<Self, WkhtmlError> {
-        dotenv::dotenv().ok();
         Self::bin_checks(&wkhtmltox_cmd).map_err(WkhtmlError::ServiceErr)?;
         let work_dir = env::var("WKHTMLAPP_WORK_DIR");
         let work_dir = work_dir.unwrap_or_else(|_| Self::default_work_dir());
@@ -94,13 +94,37 @@ impl Core {
         fs::create_dir_all(work_dir).map_err(|e| {
             WkhtmlError::ServiceErr(format!("Failed to create working directory, due to: {}", e))
         })?;
-        self.work_dir = Self::parse_dir(&work_dir)?;
+        self.work_dir = Self::parse_dir(work_dir)?;
         Ok(self)
     }
 
-    pub fn get_out_path(&self, name: &str) -> String {
+    pub fn get_out_path(&self, name: &str) -> PathBuf {
         let temp_name = format!("{}-{}", Uuid::new_v4(), name);
-        self.work_dir.join(temp_name).to_str().unwrap().to_string()
+        self.work_dir.join(temp_name)
+    }
+
+    pub fn build_args(options: &HashMap<String, String>) -> Vec<String> {
+        let mut args = Vec::new();
+        for (key, v) in options {
+            if *v == "false" {
+                continue;
+            }
+            if *v == "true" {
+                if *key == "toc" || *key == "cover" {
+                    args.push(key.to_string());
+                } else {
+                    args.push(format!("--{}", key));
+                }
+            } else {
+                if *key == "toc" || *key == "cover" {
+                    args.push(key.to_string());
+                } else {
+                    args.push(format!("--{}", key));
+                    args.push(v.to_string());
+                }
+            }
+        }
+        args
     }
 
     pub fn run(
@@ -108,11 +132,11 @@ impl Core {
         input: WkhtmlInput,
         name: &str,
         args: Vec<String>,
-    ) -> Result<String, WkhtmlError> {
+    ) -> Result<PathBuf, WkhtmlError> {
         match input {
-            WkhtmlInput::File(path) => self.run_with_file(&path, name, args),
-            WkhtmlInput::Url(url) => self.run_with_url(&url, name, args),
-            WkhtmlInput::Html(html) => self.run_with_html(&html, name, args),
+            WkhtmlInput::File(path) => self.run_with_file(path, name, args),
+            WkhtmlInput::Url(url) => self.run_with_url(url, name, args),
+            WkhtmlInput::Html(html) => self.run_with_html(html, name, args),
         }
     }
 
@@ -121,14 +145,13 @@ impl Core {
         url: &str,
         name: &str,
         args: Vec<String>,
-    ) -> Result<String, WkhtmlError> {
+    ) -> Result<PathBuf, WkhtmlError> {
         let out_path = self.get_out_path(name);
         let mut cmd = Command::new(&self.wkhtmltox_cmd);
         cmd.args(args)
             .arg(url)
             .arg(&out_path)
             .stdout(Stdio::piped());
-        //.stderr(Stdio::piped());
 
         if !Self::get_debug() {
             cmd.stderr(Stdio::piped());
@@ -160,14 +183,13 @@ impl Core {
         file_path: &str,
         name: &str,
         args: Vec<String>,
-    ) -> Result<String, WkhtmlError> {
+    ) -> Result<PathBuf, WkhtmlError> {
         let out_path = self.get_out_path(name);
         let mut cmd = Command::new(&self.wkhtmltox_cmd);
         cmd.args(args)
             .arg(file_path)
             .arg(&out_path)
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped());
+            .stdout(Stdio::piped());
 
         if !Self::get_debug() {
             cmd.stderr(Stdio::piped());
@@ -199,7 +221,7 @@ impl Core {
         html: &str,
         name: &str,
         args: Vec<String>,
-    ) -> Result<String, WkhtmlError> {
+    ) -> Result<PathBuf, WkhtmlError> {
         let out_path = self.get_out_path(name);
         let mut cmd = Command::new(&self.wkhtmltox_cmd);
         cmd.args(args)
