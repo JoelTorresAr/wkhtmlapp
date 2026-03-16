@@ -54,17 +54,12 @@ impl Core {
         info!("Bootstrap check for {} tool", wkhtmltox_cmd);
         let status = Command::new(wkhtmltox_cmd)
             .arg("-V")
-            .spawn()
-            .map_err(|e| format!("Failed to spawn child process: {}", e))
-            .and_then(|mut p| {
-                p.wait().map_err(|e| {
-                    format!("Failed to wait for {} tool , error: {}", wkhtmltox_cmd, e)
-                })
-            });
+            .output()
+            .map_err(|e| format!("Failed to spawn child process: {}", e));
 
         status
             .and_then(|s| {
-                if s.success() {
+                if s.status.success() {
                     Ok(())
                 } else {
                     Err(NO_WKHTMLTOPDF_ERR.to_string())
