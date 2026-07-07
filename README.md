@@ -9,15 +9,21 @@ This library was developed inspired by barryvdh's laravel-snappy.
 | Resource          | Link                                                                                                                      |
 | ----------------- | ------------------------------------------------------------------------------------------------------------------------- |
 | Crate             | [![Crates.io](https://img.shields.io/crates/v/wkhtmlapp?color=warning&style=plastic)](https://crates.io/crates/wkhtmlapp) |
-| Documentation     | [Cargo docs](https://github.com/JoelTorresAr/wkhtmlapp.git)                                                               |
+| Documentation     | [docs.rs/wkhtmlapp](https://docs.rs/wkhtmlapp)                                                                            |
 | Upstream          | [wkhtmltopdf.org](http://wkhtmltopdf.org/)                                                                                |
 | Wkhtmltox Version | [wkhtmltox-0.12.6-1](https://github.com/wkhtmltopdf/packaging/releases)                                                   |
 -----
+> **⚠️ Upstream status:** the wkhtmltopdf project is [archived and unmaintained](https://github.com/wkhtmltopdf/wkhtmltopdf)
+> since 2023. It still works well for server-side rendering, but no new releases or security
+> fixes are expected. Also note that since wkhtmltox 0.12.6, local file access is disabled by
+> default — pass `enable-local-file-access` if your HTML references local assets.
+
 ## _Required setup before use_
  - Set wkhtmltopdf in your system PATH, or download the portable versions
    of wkhtmltopdf for your operating system and reference them via environment variables.
  - **Note:** Since v1.1.0, this library no longer loads `.env` files automatically.
    If you need `.env` support, load it in your application (e.g., using `dotenvy` or `dotenv`).
+   See `.env.example` for the supported variables.
 
 Environment variables:
 ```sh
@@ -33,8 +39,58 @@ Environment variables:
 - Convert html code to PDF and IMG
 - Convert html file to PDF and IMG
 - Convert url link to PDF and IMG
+- Repeatable options (`cookie`, `custom-header`, `allow`, ...) via `add_arg()`
+- `cover` / `toc` objects with correct positional placement
+- Work dir housekeeping via `clear_work_dir()`
+
+## Notes on behavior
+
+- **Output naming:** every render writes to the work dir as `<uuid>-<name>.<ext>`, so
+  concurrent renders never collide. The `name` must be a plain file name — names containing
+  `/`, `\` or `..` are rejected to prevent writing outside the work dir.
+- **Output cleanup:** rendered files are **never deleted automatically**. Call
+  `pdf_app.clear_work_dir()` / `img_app.clear_work_dir()` periodically (it removes files
+  only, not subdirectories), or manage the files yourself. Partial outputs of failed
+  renders are removed automatically.
+- **Two-value options** (`cookie`, `custom-header`, `post`, `post-file`, `replace`) take
+  both values separated by a space: `set_arg("cookie", "session abc123")` becomes
+  `--cookie session abc123`.
+- **Flags** use `"true"` / `"false"` string values: `"true"` emits the flag, `"false"` omits it.
+- **Logging:** diagnostics go through the [`log`](https://crates.io/crates/log) facade.
+  Enable them from your application with e.g. `env_logger` and `RUST_LOG=debug`.
 
 ##  _Change Logs_
+
+### 1.2.0
+ - **Fix: `cover` object no longer drops its input**: `set_arg("cover", "cover.html")` now
+   correctly emits `cover cover.html` as a positional object. Previously the input value was
+   silently discarded, making cover pages impossible to use.
+ - **Fix: deterministic argument order**: options are emitted sorted (they came from a
+   `HashMap` in random order), and `cover`/`toc` are placed as positional objects with
+   TOC options after the `toc` object, as wkhtmltopdf requires.
+ - **Fix: render errors always include wkhtmltox's stderr**: stderr is now captured in every
+   mode. Previously, with debug enabled, failures were reported with an empty error message.
+ - **Fix: binary check no longer pollutes stdout**: `PdfApp::new()`/`ImgApp::new()` verified
+   the binary with an inherited stdout, printing the wkhtmltox version banner to the host
+   application's console. The check is now silent and the "not found" error names the actual
+   binary (before it always said `wkhtmltopdf`, even for `wkhtmltoimage`).
+ - **Security: output names are validated**: names containing `/`, `\` or `..` are rejected,
+   preventing path traversal outside the work dir when names come from user input.
+ - **New: `add_arg()` for repeatable options**: `cookie`, `custom-header`, `allow`,
+   `run-script`, etc. can now be passed multiple times. Two-value options (`--cookie name value`)
+   are supported via space-separated values.
+ - **New: `clear_work_dir()`**: removes leftover output files from the work dir (files only,
+   never subdirectories). Outputs are never deleted automatically — this makes cleanup explicit.
+ - **New: partial outputs of failed renders are removed** instead of accumulating in the work dir.
+ - **Removed `APP_DEBUG` env var**: debug behavior was inconsistent (runtime env var vs.
+   compile-time `debug_assertions`). All diagnostics now go through the `log` facade — control
+   them with `RUST_LOG` in the consuming application.
+ - **Internal: the three `run_with_*` paths were unified** into a single `execute()` helper
+   (~90 fewer duplicated lines), and `default_work_dir()` no longer can panic on non-UTF8 paths.
+ - **Quality:** crate-level and API documentation, unit tests for argument building and name
+   validation, integration tests marked `#[ignore]` (run with `cargo test -- --include-ignored`),
+   GitHub Actions CI (fmt + clippy + tests), `rust-version = "1.80"` and docs.rs metadata in
+   `Cargo.toml`, `.env` replaced by `.env.example`.
 
 ### 1.1.0
  - **`WkhtmlError` implements `std::error::Error`**: Now compatible with `?` operator, `anyhow`, `thiserror` and the standard Rust error ecosystem.
@@ -97,6 +153,24 @@ let file_path = pdf_app.run(
             WkhtmlInput::Url("https://www.rust-lang.org/en-US/"),
             "demo",
         )?;
+```
+
+### Cover page, TOC and repeatable options
+
+```rust
+let mut pdf_app = PdfApp::new()?;
+pdf_app
+    .set_arg("cover", "cover.html")?          // positional object: cover cover.html
+    .set_arg("toc", "true")?                  // positional object: toc
+    .set_arg("toc-depth", "2")?               // emitted after the toc object
+    .add_arg("cookie", "session abc123")?     // --cookie session abc123
+    .add_arg("cookie", "theme dark")?         // repeatable: a second --cookie
+    .add_arg("allow", "/var/www/assets")?;
+
+let report = pdf_app.run(WkhtmlInput::File("report.html"), "report")?;
+
+// Outputs are never deleted automatically; clean up when appropriate:
+pdf_app.clear_work_dir()?;
 ```
 ## IMG Examples
 

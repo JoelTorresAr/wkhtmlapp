@@ -2,13 +2,18 @@ use crate::app::WkhtmlError;
 use crate::app::WkhtmlInput;
 use crate::core::Core;
 use std::collections::{HashMap, HashSet};
-use std::path::PathBuf;
 use std::env;
+use std::path::PathBuf;
 
+/// HTML-to-PDF converter backed by the `wkhtmltopdf` binary
+/// (override the binary path with the `WKHTMLTOPDF_CMD` env var).
 #[derive(Debug, Clone)]
 pub struct PdfApp {
     pub app: Core,
+    /// Single-value options; setting the same key again replaces it.
     pub options: HashMap<String, String>,
+    /// Repeatable options added via [`PdfApp::add_arg`], kept in insertion order.
+    pub extra_args: Vec<(String, String)>,
 }
 
 impl PdfApp {
@@ -19,12 +24,19 @@ impl PdfApp {
         Ok(Self {
             app: Core::new(wkhtmltopdf_cmd)?,
             options: HashMap::new(),
+            extra_args: Vec::new(),
         })
     }
 
     pub fn set_work_dir(&mut self, work_dir: &str) -> Result<&mut Self, WkhtmlError> {
         self.app.set_work_dir(work_dir)?;
         Ok(self)
+    }
+
+    /// Removes leftover output files from the work dir (outputs are never
+    /// deleted automatically).
+    pub fn clear_work_dir(&self) -> Result<(), WkhtmlError> {
+        self.app.clear_work_dir()
     }
 
     pub fn set_args(&mut self, args: HashMap<&str, &str>) -> Result<&mut Self, WkhtmlError> {
@@ -34,6 +46,10 @@ impl PdfApp {
         Ok(self)
     }
 
+    /// Sets an option, replacing any previous value for the same key.
+    /// Use `"true"`/`"false"` to enable/disable flags. Two-value options
+    /// (`cookie`, `custom-header`, `post`, `post-file`, `replace`) take both
+    /// values separated by a space: `set_arg("cookie", "name value")`.
     pub fn set_arg(&mut self, key: &str, arg: &str) -> Result<&mut Self, WkhtmlError> {
         if Self::validate_option(key) {
             self.options.insert(key.into(), arg.into());
@@ -43,156 +59,170 @@ impl PdfApp {
         }
     }
 
+    /// Appends a repeatable option (`cookie`, `custom-header`, `allow`,
+    /// `run-script`, ...) without replacing previously added values.
+    pub fn add_arg(&mut self, key: &str, arg: &str) -> Result<&mut Self, WkhtmlError> {
+        if Self::validate_option(key) {
+            self.extra_args.push((key.into(), arg.into()));
+            Ok(self)
+        } else {
+            Err(WkhtmlError::ServiceErr(format!("Invalid option: {}", key)))
+        }
+    }
+
+    /// Renders the input to a PDF inside the work dir and returns its path.
+    /// `name` must be a plain file name (no path separators or `..`).
     pub fn run(&self, input: WkhtmlInput, name: &str) -> Result<PathBuf, WkhtmlError> {
         let name = format!("{}.pdf", name);
-        let args = Core::build_args(&self.options);
+        let args = Core::build_args(&self.options, &self.extra_args);
         self.app.run(input, &name, args)
     }
 
     fn validate_option(key: &str) -> bool {
-        static OPTIONS: std::sync::LazyLock<HashSet<&'static str>> = std::sync::LazyLock::new(|| {
-            HashSet::from([
-                // Global options
-                "collate",
-                "no-collate",
-                "cookie-jar",
-                "copies",
-                "dpi",
-                "extended-help",
-                "grayscale",
-                "help",
-                "htmldoc",
-                "ignore-load-errors",
-                "image-dpi",
-                "image-quality",
-                "license",
-                "log-level",
-                "lowquality",
-                "manpage",
-                "margin-bottom",
-                "margin-left",
-                "margin-right",
-                "margin-top",
-                "orientation",
-                "page-height",
-                "page-size",
-                "page-width",
-                "no-pdf-compression",
-                "quiet",
-                "read-args-from-stdin",
-                "readme",
-                "title",
-                "use-xserver",
-                "version",
-                // Outline options
-                "dump-default-toc-xsl",
-                "dump-outline",
-                "outline",
-                "no-outline",
-                "outline-depth",
-                "output-format",
-                // Page options
-                "allow",
-                "background",
-                "no-background",
-                "bypass-proxy-for",
-                "cache-dir",
-                "checkbox-checked-svg",
-                "checkbox-svg",
-                "cookie",
-                "custom-header",
-                "custom-header-propagation",
-                "no-custom-header-propagation",
-                "debug-javascript",
-                "no-debug-javascript",
-                "default-header",
-                "encoding",
-                "disable-external-links",
-                "enable-external-links",
-                "disable-forms",
-                "enable-forms",
-                "images",
-                "no-images",
-                "disable-internal-links",
-                "enable-internal-links",
-                "disable-javascript",
-                "enable-javascript",
-                "javascript-delay",
-                "keep-relative-links",
-                "load-error-handling",
-                "load-media-error-handling",
-                "disable-local-file-access",
-                "enable-local-file-access",
-                "minimum-font-size",
-                "exclude-from-outline",
-                "include-in-outline",
-                "page-offset",
-                "password",
-                "disable-plugins",
-                "enable-plugins",
-                "post",
-                "post-file",
-                "print-media-type",
-                "no-print-media-type",
-                "proxy",
-                "proxy-hostname-lookup",
-                "radiobutton-checked-svg",
-                "radiobutton-svg",
-                "redirect-delay",
-                "resolve-relative-links",
-                "run-script",
-                "disable-smart-shrinking",
-                "enable-smart-shrinking",
-                "ssl-crt-path",
-                "ssl-key-password",
-                "ssl-key-path",
-                "stop-slow-scripts",
-                "no-stop-slow-scripts",
-                "disable-toc-back-links",
-                "enable-toc-back-links",
-                "user-style-sheet",
-                "username",
-                "viewport-size",
-                "window-status",
-                "zoom",
-                // Headers and footer options
-                "footer-center",
-                "footer-font-name",
-                "footer-font-size",
-                "footer-html",
-                "footer-left",
-                "footer-line",
-                "no-footer-line",
-                "footer-right",
-                "footer-spacing",
-                "header-center",
-                "header-font-name",
-                "header-font-size",
-                "header-html",
-                "header-left",
-                "header-line",
-                "no-header-line",
-                "header-right",
-                "header-spacing",
-                "replace",
-                // Cover object
-                "cover",
-                // TOC object
-                "toc",
-                // TOC options
-                "disable-dotted-lines",
-                "toc-depth",
-                "toc-font-name",
-                "toc-l1-font-size",
-                "toc-header-text",
-                "toc-header-font-name",
-                "toc-header-font-size",
-                "toc-level-indentation",
-                "disable-toc-links",
-                "toc-text-size-shrink",
-                "xsl-style-sheet",
-            ])
-        });
+        static OPTIONS: std::sync::LazyLock<HashSet<&'static str>> =
+            std::sync::LazyLock::new(|| {
+                HashSet::from([
+                    // Global options
+                    "collate",
+                    "no-collate",
+                    "cookie-jar",
+                    "copies",
+                    "dpi",
+                    "extended-help",
+                    "grayscale",
+                    "help",
+                    "htmldoc",
+                    "ignore-load-errors",
+                    "image-dpi",
+                    "image-quality",
+                    "license",
+                    "log-level",
+                    "lowquality",
+                    "manpage",
+                    "margin-bottom",
+                    "margin-left",
+                    "margin-right",
+                    "margin-top",
+                    "orientation",
+                    "page-height",
+                    "page-size",
+                    "page-width",
+                    "no-pdf-compression",
+                    "quiet",
+                    "read-args-from-stdin",
+                    "readme",
+                    "title",
+                    "use-xserver",
+                    "version",
+                    // Outline options
+                    "dump-default-toc-xsl",
+                    "dump-outline",
+                    "outline",
+                    "no-outline",
+                    "outline-depth",
+                    "output-format",
+                    // Page options
+                    "allow",
+                    "background",
+                    "no-background",
+                    "bypass-proxy-for",
+                    "cache-dir",
+                    "checkbox-checked-svg",
+                    "checkbox-svg",
+                    "cookie",
+                    "custom-header",
+                    "custom-header-propagation",
+                    "no-custom-header-propagation",
+                    "debug-javascript",
+                    "no-debug-javascript",
+                    "default-header",
+                    "encoding",
+                    "disable-external-links",
+                    "enable-external-links",
+                    "disable-forms",
+                    "enable-forms",
+                    "images",
+                    "no-images",
+                    "disable-internal-links",
+                    "enable-internal-links",
+                    "disable-javascript",
+                    "enable-javascript",
+                    "javascript-delay",
+                    "keep-relative-links",
+                    "load-error-handling",
+                    "load-media-error-handling",
+                    "disable-local-file-access",
+                    "enable-local-file-access",
+                    "minimum-font-size",
+                    "exclude-from-outline",
+                    "include-in-outline",
+                    "page-offset",
+                    "password",
+                    "disable-plugins",
+                    "enable-plugins",
+                    "post",
+                    "post-file",
+                    "print-media-type",
+                    "no-print-media-type",
+                    "proxy",
+                    "proxy-hostname-lookup",
+                    "radiobutton-checked-svg",
+                    "radiobutton-svg",
+                    "redirect-delay",
+                    "resolve-relative-links",
+                    "run-script",
+                    "disable-smart-shrinking",
+                    "enable-smart-shrinking",
+                    "ssl-crt-path",
+                    "ssl-key-password",
+                    "ssl-key-path",
+                    "stop-slow-scripts",
+                    "no-stop-slow-scripts",
+                    "disable-toc-back-links",
+                    "enable-toc-back-links",
+                    "user-style-sheet",
+                    "username",
+                    "viewport-size",
+                    "window-status",
+                    "zoom",
+                    // Headers and footer options
+                    "footer-center",
+                    "footer-font-name",
+                    "footer-font-size",
+                    "footer-html",
+                    "footer-left",
+                    "footer-line",
+                    "no-footer-line",
+                    "footer-right",
+                    "footer-spacing",
+                    "header-center",
+                    "header-font-name",
+                    "header-font-size",
+                    "header-html",
+                    "header-left",
+                    "header-line",
+                    "no-header-line",
+                    "header-right",
+                    "header-spacing",
+                    "replace",
+                    // Cover object
+                    "cover",
+                    // TOC object
+                    "toc",
+                    // TOC options
+                    "disable-dotted-lines",
+                    "toc-depth",
+                    "toc-font-name",
+                    "toc-l1-font-size",
+                    "toc-header-text",
+                    "toc-header-font-name",
+                    "toc-header-font-size",
+                    "toc-level-indentation",
+                    "disable-toc-links",
+                    "toc-text-size-shrink",
+                    "xsl-style-sheet",
+                ])
+            });
         OPTIONS.contains(key)
     }
 }

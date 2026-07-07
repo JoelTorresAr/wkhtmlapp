@@ -1,5 +1,7 @@
-use crate::{PdfApp, ImgApp};
+use crate::{ImgApp, PdfApp};
 
+/// Input source for a render: a local file path, a URL, or raw HTML
+/// (piped through stdin).
 #[derive(Debug, Clone)]
 pub enum WkhtmlInput<'a> {
     File(&'a str),
@@ -7,6 +9,8 @@ pub enum WkhtmlInput<'a> {
     Html(&'a str),
 }
 
+/// Library error type. `ServiceErr` covers setup/configuration problems,
+/// `RenderingErr` covers failures while running the wkhtmltox binary.
 #[derive(Debug, Clone)]
 pub enum WkhtmlError {
     ServiceErr(String),
@@ -24,13 +28,14 @@ impl std::fmt::Display for WkhtmlError {
 
 impl std::error::Error for WkhtmlError {}
 
+/// Convenience wrapper exposing both converters at once.
 #[derive(Debug, Clone)]
 pub struct App {
     pub pdf_app: PdfApp,
     pub img_app: ImgApp,
 }
 
-impl App{
+impl App {
     pub fn new() -> Result<Self, WkhtmlError> {
         Ok(Self {
             pdf_app: PdfApp::new()?,
