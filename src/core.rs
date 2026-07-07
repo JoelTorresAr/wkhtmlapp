@@ -98,6 +98,17 @@ impl Core {
         Ok(self)
     }
 
+    /// Re-creates the work dir if missing. Temp cleaners (Windows Disk
+    /// Cleanup/Storage Sense, systemd-tmpfiles, macOS periodic cleanup) can
+    /// delete it while the app runs; without this, every render fails with
+    /// "QPainter::begin(): Returned false / Unable to write to destination"
+    /// until the process restarts.
+    fn ensure_work_dir(&self) -> Result<(), WkhtmlError> {
+        fs::create_dir_all(&self.work_dir).map_err(|e| {
+            WkhtmlError::ServiceErr(format!("Failed to create working directory, due to: {}", e))
+        })
+    }
+
     pub fn get_out_path(&self, name: &str) -> PathBuf {
         let temp_name = format!("{}-{}", Uuid::new_v4(), name);
         self.work_dir.join(temp_name)
@@ -146,6 +157,7 @@ impl Core {
         name: &str,
         args: Vec<String>,
     ) -> Result<PathBuf, WkhtmlError> {
+        self.ensure_work_dir()?;
         let out_path = self.get_out_path(name);
         let mut cmd = Command::new(&self.wkhtmltox_cmd);
         cmd.args(args)
@@ -184,6 +196,7 @@ impl Core {
         name: &str,
         args: Vec<String>,
     ) -> Result<PathBuf, WkhtmlError> {
+        self.ensure_work_dir()?;
         let out_path = self.get_out_path(name);
         let mut cmd = Command::new(&self.wkhtmltox_cmd);
         cmd.args(args)
@@ -222,6 +235,7 @@ impl Core {
         name: &str,
         args: Vec<String>,
     ) -> Result<PathBuf, WkhtmlError> {
+        self.ensure_work_dir()?;
         let out_path = self.get_out_path(name);
         let mut cmd = Command::new(&self.wkhtmltox_cmd);
         cmd.args(args)
@@ -262,5 +276,37 @@ impl Core {
                 String::from_utf8_lossy(&output.stderr)
             )))
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // Regression: temp cleaners can delete the work dir while the app runs;
+    // renders must re-create it instead of failing until process restart.
+    #[test]
+    fn ensure_work_dir_recreates_deleted_dir() {
+        let work_dir = env::temp_dir().join(format!("wkhtmlapp-test-{}", Uuid::new_v4()));
+        let core = Core {
+            wkhtmltox_cmd: "wkhtmltopdf".to_string(),
+            work_dir: work_dir.clone(),
+        };
+
+        // Dir does not exist yet (simulates cleaner having removed it).
+        assert!(!work_dir.exists());
+        core.ensure_work_dir().expect("should create missing work dir");
+        assert!(work_dir.is_dir());
+
+        // Idempotent when it already exists.
+        core.ensure_work_dir().expect("should be a no-op when dir exists");
+
+        // Deleted again mid-life → recreated again.
+        fs::remove_dir_all(&work_dir).unwrap();
+        assert!(!work_dir.exists());
+        core.ensure_work_dir().expect("should re-create deleted work dir");
+        assert!(work_dir.is_dir());
+
+        let _ = fs::remove_dir_all(&work_dir);
     }
 }
