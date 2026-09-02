@@ -35,6 +35,20 @@ pub struct Core {
     pub work_dir: PathBuf,
 }
 
+/// Prevents a console window from flashing on Windows when the parent is a GUI
+/// application (`windows_subsystem = "windows"`): without `CREATE_NO_WINDOW`,
+/// every wkhtmltox spawn opens a visible console for the child process.
+/// No-op on other platforms.
+#[cfg(windows)]
+fn hide_console_window(cmd: &mut Command) {
+    use std::os::windows::process::CommandExt;
+    const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+    cmd.creation_flags(CREATE_NO_WINDOW);
+}
+
+#[cfg(not(windows))]
+fn hide_console_window(_cmd: &mut Command) {}
+
 impl Core {
     /// Verifies the binary exists and prepares the work dir
     /// (`WKHTMLAPP_WORK_DIR` env var, or the OS temp dir by default).
@@ -73,12 +87,14 @@ impl Core {
     /// to the parent process' stdio.
     pub fn bin_checks(wkhtmltox_cmd: &str) -> Result<(), String> {
         info!("Bootstrap check for {} tool", wkhtmltox_cmd);
-        let status = Command::new(wkhtmltox_cmd)
+        let mut check = Command::new(wkhtmltox_cmd);
+        check
             .arg("-V")
             .stdin(Stdio::null())
             .stdout(Stdio::null())
-            .stderr(Stdio::null())
-            .status();
+            .stderr(Stdio::null());
+        hide_console_window(&mut check);
+        let status = check.status();
 
         match status {
             Ok(s) if s.success() => Ok(()),
@@ -289,6 +305,7 @@ impl Core {
             .arg(&out_path)
             .stdout(Stdio::piped())
             .stderr(Stdio::piped());
+        hide_console_window(&mut cmd);
         if html.is_some() {
             cmd.stdin(Stdio::piped());
         }
