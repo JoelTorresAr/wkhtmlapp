@@ -61,6 +61,12 @@ Environment variables:
 
 ##  _Change Logs_
 
+### 1.2.1
+ - **Fix: no console window flashes on Windows**: both wkhtmltox spawns (the binary check
+   and the render) now use `CREATE_NO_WINDOW`, so GUI applications
+   (`windows_subsystem = "windows"`) no longer show a black console per render.
+   No-op on other platforms.
+
 ### 1.2.0
  - **Fix: `cover` object no longer drops its input**: `set_arg("cover", "cover.html")` now
    correctly emits `cover cover.html` as a positional object. Previously the input value was
